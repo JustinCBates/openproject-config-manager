@@ -70,19 +70,59 @@ config-manager validate
 
 ### Control Flow
 
+The Configuration Manager follows a **4-phase control flow** designed for maximum automation and validation:
+
+#### **Phase 1: Environment Discovery & Probing**
 ```
-User Input
-    ↓
-Discovery Engine (auto-detect environment)
-    ↓
-Interactive Collector (Rich UI for user input with smart defaults)
-    ↓
-Validation Engine (validate completeness + live testing with prober)
-    ↓
-Configuration Finalizer (generate .env and .cfg files)
-    ↓
-Configuration Output (.env, .cfg)
+OS Probe → Generate .cfg.defaults
+├── Detect OS (Linux distro, version, architecture)  
+├── Scan network interfaces & available IPs
+├── Check Docker installation & version
+├── Scan available ports (80, 443, 8080, etc.)
+├── Detect existing SSL certificates
+├── Check system resources (RAM, disk space)
+└── Write .cfg.defaults with intelligent defaults
 ```
+
+#### **Phase 2: Interactive Configuration Collection**
+```
+Rich Interactive UI → Generate .cfg
+├── Load .cfg.defaults as starting point
+├── Present Rich-based prompts with smart defaults
+├── Collect user preferences:
+│   ├── Domain name & SSL preferences
+│   ├── Port configurations  
+│   ├── Database settings
+│   ├── Email/IMAP configuration
+│   └── Advanced options (if requested)
+├── Real-time validation during input
+└── Save final .cfg file
+```
+
+#### **Phase 3: Pre-Deploy Validation**  
+```
+Validation Pass → Prober Integration
+├── Load .cfg file
+├── Validate configuration completeness
+├── Use Prober utility for live testing:
+│   ├── DNS resolution checks
+│   ├── Port availability testing
+│   ├── SSL certificate validation
+│   └── Network connectivity tests
+├── Present validation results
+└── Option to loop back to Phase 2 if issues found
+```
+
+#### **Phase 4: Final Configuration Export**
+```
+Export for Deployment
+├── Convert .cfg to .env format
+├── Generate Docker Compose overrides
+├── Prepare Jinja2 template variables
+└── Hand off to Deploy Manager
+```
+
+**Key Design Principle**: The user can loop between Phases 2 and 3 until all validation passes, ensuring a bulletproof configuration before deployment.
 
 ### Components
 
