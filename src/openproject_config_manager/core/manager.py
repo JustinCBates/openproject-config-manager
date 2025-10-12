@@ -16,12 +16,8 @@ from ..validation.validator import ConfigurationValidator
 from ..export.cfg_writer import CfgWriter
 from ..ui.questionary_ui import QuestionaryUI
 
-# Import the new flow engine
-import sys
-from pathlib import Path
-ui_flow_designer_path = Path(__file__).parent.parent.parent.parent / "ui_flow_designer"
-sys.path.append(str(ui_flow_designer_path))
-from engine.flow_engine import FlowEngine
+# Import the TUI Form Engine (external package)
+from tui_form_engine.core.flow_engine import FlowEngine
 
 
 logger = logging.getLogger(__name__)
@@ -58,8 +54,8 @@ class ConfigurationManager:
         self.system_discovery = SystemDiscovery()
         self.docker_discovery = DockerDiscovery()
         
-        # Initialize flow engine with tui_layouts directory
-        flows_dir = Path(__file__).parent.parent.parent.parent / "ui_flow_designer" / "tui_layouts"
+        # Initialize flow engine with layouts directory
+        flows_dir = Path(__file__).parent.parent / "collector" / "layouts"
         self.flow_engine = FlowEngine(flows_dir=str(flows_dir))
         
         # Note: Legacy InteractiveCollector removed during Questionary migration
@@ -144,38 +140,13 @@ class ConfigurationManager:
                 'env_data': self.discovered_data.get('environment', {}),
             }
             
-            # Run flows in sequence to collect configuration
+            # Run comprehensive configuration flow
             config_data = {}
             
-            # Core configuration flow
-            self.ui.show_step("Collecting core OpenProject settings...")
-            core_result = self.flow_engine.execute_flow('core_configuration', context=flow_variables)
-            config_data.update(core_result)
-            flow_variables.update(core_result)
-            
-            # Database configuration flow
-            self.ui.show_step("Collecting database configuration...")
-            db_result = self.flow_engine.execute_flow('database_configuration', context=flow_variables)
-            config_data['database'] = db_result
-            flow_variables['database'] = db_result
-            
-            # Proxy configuration flow
-            self.ui.show_step("Collecting proxy configuration...")
-            proxy_result = self.flow_engine.execute_flow('proxy_configuration', context=flow_variables)
-            config_data['proxy'] = proxy_result
-            flow_variables['proxy'] = proxy_result
-            
-            # URL configuration flow
-            self.ui.show_step("Collecting URL configuration...")
-            url_result = self.flow_engine.execute_flow('url_configuration', context=flow_variables)
-            config_data.update(url_result)
-            flow_variables.update(url_result)
-            
-            # Storage configuration flow
-            self.ui.show_step("Collecting storage configuration...")
-            storage_result = self.flow_engine.execute_flow('storage_configuration', context=flow_variables)
-            config_data['storage'] = storage_result
-            flow_variables['storage'] = storage_result
+            # Execute main configuration layout
+            self.ui.show_step("Collecting OpenProject configuration...")
+            flow_result = self.flow_engine.execute_flow('config_tui.layout', context=flow_variables)
+            config_data.update(flow_result)
             
             # Create configuration object
             self.configuration = Configuration(**config_data)
