@@ -48,8 +48,9 @@ class OpenProjectConfigCollector:
     
     def collect_configuration(
         self, 
-        flow_name: str = "openproject_main_config",
-        mock_responses: Dict[str, Any] = None
+        flow_name: str = "config_tui.layout",
+        mock_responses: Dict[str, Any] = None,
+        skip_validation: bool = False
     ) -> Dict[str, Any]:
         """
         Execute the full configuration collection workflow.
@@ -57,6 +58,7 @@ class OpenProjectConfigCollector:
         Args:
             flow_name: Name of the flow YAML file (without .yml extension)
             mock_responses: Optional mock responses for testing
+            skip_validation: Skip configuration validation (useful for testing)
             
         Returns:
             Dict containing the final validated configuration
@@ -88,27 +90,32 @@ class OpenProjectConfigCollector:
             json.dump(user_responses, f, indent=2)
         print(f"💾 User responses saved: {responses_file}")
         
-        # Step 3: Validate and transform using ConfigurationManager
-        print(f"🔍 Validating configuration...")
-        try:
-            # Convert responses to Configuration object
-            config = self._transform_responses_to_config(user_responses)
-            
-            # Validate using ConfigurationManager
-            validation_result = self.config_manager.validate_configuration(config)
-            
-            if not validation_result.is_valid:
-                print(f"❌ Configuration validation failed:")
-                for error in validation_result.errors:
-                    print(f"  - {error}")
-                raise ValueError("Configuration validation failed")
-            
-        except Exception as e:
-            print(f"❌ Configuration validation failed: {e}")
-            raise
-        
-        # Step 4: Generate final configuration for deploy-manager
-        final_config = self._generate_deploy_config(config, user_responses)
+        # Step 3: Validate and transform using ConfigurationManager (optional)
+        if skip_validation:
+            print(f"⚠️  Skipping configuration validation...")
+            # Create a simple config structure for deploy-manager
+            final_config = self._generate_simple_deploy_config(user_responses)
+        else:
+            print(f"🔍 Validating configuration...")
+            try:
+                # Convert responses to Configuration object
+                config = self._transform_responses_to_config(user_responses)
+                
+                # Validate using ConfigurationManager
+                validation_result = self.config_manager.validator.validate_configuration(config)
+                
+                if not validation_result.is_valid:
+                    print(f"❌ Configuration validation failed:")
+                    for error in validation_result.errors:
+                        print(f"  - {error}")
+                    raise ValueError("Configuration validation failed")
+                
+                # Step 4: Generate final configuration for deploy-manager
+                final_config = self._generate_deploy_config(config, user_responses)
+                
+            except Exception as e:
+                print(f"❌ Configuration validation failed: {e}")
+                raise
         
         # Step 5: Save final configuration
         config_file = self.output_dir / f"openproject_config.json"
@@ -121,33 +128,110 @@ class OpenProjectConfigCollector:
     
     def _transform_responses_to_config(self, responses: Dict[str, Any]) -> Configuration:
         """Transform user responses to Configuration object."""
-        # Map flow responses to Configuration fields
+        import secrets
+        
+        # Generate required fields that weren't collected in the form
+        secret_key_base = secrets.token_hex(64)  # Generate 128-character hex string
+        
+        # Extract data from nested response structure
+        project = responses.get('project', {})
+        admin = responses.get('admin', {})
+        database = responses.get('database', {})
+        network = responses.get('network', {})
+        email = responses.get('email', {})
+        smtp = email.get('smtp', {})
+        storage = responses.get('storage', {})
+        repositories = responses.get('repositories', {})
+        resources = responses.get('resources', {})
+        backup = responses.get('backup', {})
+        monitoring = responses.get('monitoring', {})
+        
+        # Map to Configuration model structure
         config_data = {
-            # Basic project settings
-            'project_name': responses.get('project', {}).get('name', 'openproject'),
-            'admin_email': responses.get('admin', {}).get('email'),
+            # Required core settings
+            'secret_key_base': secret_key_base,
+            'rails_env': project.get('environment', 'production'),
             
             # Database configuration
             'database': {
-                'type': responses.get('database', {}).get('type', 'postgresql'),
-                'host': responses.get('database', {}).get('host', 'localhost'),
-                'port': responses.get('database', {}).get('port', 5432),
-                'name': responses.get('database', {}).get('name', 'openproject'),
-                'username': responses.get('database', {}).get('username', 'openproject'),
-                'password': responses.get('database', {}).get('password'),
+                'adapter': database.get('type', 'postgresql'),
+                'host': 'db' if database.get('setup') == 'container' else database.get('host', 'localhost'),
+                'port': 5432 if database.get('type') == 'postgresql' else 3306,
+                'name': project.get('name', 'openproject'),
+                'username': 'openproject',
+                'password': admin.get('password', 'changeme123'),  # Use admin password as db password for container setup
             },
             
-            # Network configuration
-            'network': {
-                'domain': responses.get('network', {}).get('domain'),
-                'ssl_enabled': responses.get('network', {}).get('ssl_enabled', True),
-                'port': responses.get('network', {}).get('port', 80),
+            # Proxy configuration
+            'proxy': {
+                'domain': network.get('domain', 'localhost'),
+                'ssl_enabled': True,  # Default to enabled
+                'lets_encrypt': True,  # Default to Let's Encrypt
+                'lets_encrypt_email': admin.get('email'),
             },
             
-            # Add more mappings as needed...
+            # Storage configuration
+            'storage': {
+                'data_volume': f"{project.get('name', 'openproject')}_data",
+                'logs_volume': f"{project.get('name', 'openproject')}_logs",
+                'backup_enabled': backup.get('enabled', True),
+                'backup_retention_days': int(backup.get('retention_days', 30)),
+            },
+            
+            # Email configuration
+            'email_delivery_method': email.get('delivery_method', 'smtp'),
+            'smtp_address': smtp.get('host'),
+            'smtp_port': int(smtp.get('port', 587)),
+            'smtp_domain': network.get('domain'),
+            'smtp_user_name': smtp.get('username'),
+            'smtp_password': smtp.get('password'),
+            'smtp_enable_starttls_auto': smtp.get('encryption') == 'starttls',
+            
+            # Performance settings from resources
+            'web_concurrency': int(resources.get('worker_processes', 2)),
+            
+            # Logging
+            'log_level': monitoring.get('log_level', 'info'),
+            
+            # Security settings
+            'force_ssl': network.get('domain') != 'localhost',
+            'session_cookie_secure': network.get('domain') != 'localhost',
         }
         
         return Configuration(**config_data)
+    
+    def _generate_simple_deploy_config(self, responses: Dict[str, Any]) -> Dict[str, Any]:
+        """Generate simple configuration for deploy-manager without full validation."""
+        from datetime import datetime
+        
+        project = responses.get('project', {})
+        
+        return {
+            'metadata': {
+                'generated_by': 'openproject-config-manager',
+                'timestamp': datetime.now().isoformat(),
+                'flow_version': '1.0.0',
+                'validation_skipped': True
+            },
+            'openproject': {
+                'project_name': project.get('name', 'openproject'),
+                'environment': project.get('environment', 'development'),
+            },
+            'deployment': {
+                'docker_compose_template': 'openproject-standard',
+                'environment_files': [
+                    'openproject.env',
+                    'database.env'
+                ],
+                'volumes': [
+                    'openproject_data',
+                    'openproject_logs'
+                ]
+            },
+            # Raw responses for reference/debugging
+            '_raw_responses': responses,
+            '_note': 'Configuration generated without validation - suitable for testing only'
+        }
     
     def _generate_deploy_config(self, config: Configuration, responses: Dict[str, Any]) -> Dict[str, Any]:
         """Generate final configuration for deploy-manager."""
@@ -211,9 +295,11 @@ def main():
     import sys
     
     parser = argparse.ArgumentParser(description="OpenProject Configuration Collector")
-    parser.add_argument("flow_name", nargs="?", default="openproject_main_config", 
+    parser.add_argument("flow_name", nargs="?", default="config_tui.layout", 
                        help="Name of the flow to execute")
     parser.add_argument("--mock-file", help="Path to JSON file with mock responses")
+    parser.add_argument("--skip-validation", action="store_true",
+                       help="Skip configuration validation (useful for testing layouts)")
     
     args = parser.parse_args()
     
@@ -231,12 +317,18 @@ def main():
     
     try:
         # Configuration collection (interactive or mocked)
-        config = collector.collect_configuration(args.flow_name, mock_responses)
+        config = collector.collect_configuration(
+            args.flow_name, 
+            mock_responses,
+            skip_validation=args.skip_validation
+        )
         
         print(f"\n🎉 Configuration collection complete!")
         print(f"📁 Files generated:")
         print(f"  - User responses: output/{args.flow_name}_responses.json")
         print(f"  - Final config: output/openproject_config.json")
+        if args.skip_validation:
+            print(f"⚠️  Note: Validation was skipped - configuration is for testing only")
         print(f"\n✅ Ready for deployment with deploy-manager!")
         
     except Exception as e:

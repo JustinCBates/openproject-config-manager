@@ -121,8 +121,8 @@ def update(ctx, config_file, output):
 @cli.command()
 @click.option('--output-dir', '-o', type=click.Path(), default='output',
               help='Output directory for generated files (default: output)')
-@click.option('--flow', '-f', default='openproject_collector_flow',
-              help='Flow name to execute (default: openproject_collector_flow)')
+@click.option('--flow', '-f', default='config_tui.layout',
+              help='Flow name to execute (default: config_tui.layout)')
 @click.option('--mock-file', '-m', type=click.Path(exists=True),
               help='JSON file with mock responses for testing')
 @click.pass_context

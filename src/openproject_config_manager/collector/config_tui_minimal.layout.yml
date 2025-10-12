@@ -1,0 +1,115 @@
+title: OpenProject Configuration Wizard - Test
+description: Minimal test layout for design mode
+icon: 🏗️
+version: "1.0.0"
+
+metadata:
+  id: config_tui.layout
+  author: "OpenProject Config Manager"
+  category: "deployment"
+  tags: ["openproject", "configuration", "deployment", "docker"]
+  estimated_time: "5 minutes"
+
+steps:
+  # Welcome and Project Basics
+  - id: welcome
+    type: info
+    title: "Welcome to OpenProject Setup"
+    message: |
+      This wizard will guide you through configuring your OpenProject instance.
+      All settings can be changed later if needed.
+    instruction: "Press Enter to continue"
+
+  - id: project_name
+    type: text
+    message: "Project name:"
+    instruction: "Used for container names, volumes, and internal references"
+    validate: required
+    default: "openproject"
+
+  - id: admin_email
+    type: text
+    message: "Administrator email address:"
+    instruction: "Email for the primary OpenProject administrator account"
+    validate: email
+
+  - id: admin_password
+    type: password
+    message: "Administrator password:"
+    instruction: "Strong password for the admin account (min 8 characters)"
+    validate: required
+
+  - id: environment_type
+    type: select
+    message: "Deployment environment:"
+    instruction: "This affects default security and performance settings"
+    choices:
+      - "Development"
+      - "Staging" 
+      - "Production"
+    default: "Development"
+
+  - id: database_type
+    type: select
+    message: "Database type:"
+    instruction: "PostgreSQL is recommended for production use"
+    choices:
+      - "PostgreSQL"
+      - "MySQL"
+    default: "PostgreSQL"
+
+  - id: domain_name
+    type: text
+    message: "Domain name:"
+    instruction: "Domain where OpenProject will be accessible"
+    validate: required
+    default: "localhost"
+
+  - id: enable_email
+    type: confirm
+    message: "Enable email notifications?"
+    instruction: "Required for user notifications, password resets, etc."
+    default: true
+
+  - id: enable_backups
+    type: confirm
+    message: "Enable automated backups?"
+    instruction: "Recommended for production environments"
+    default: true
+
+  - id: final_step
+    type: info
+    title: "Configuration Complete"
+    message: |
+      Configuration collection complete!
+      The configuration will be validated and prepared for deployment.
+
+# Output mapping - transforms user responses to structured configuration
+output_mapping:
+  project:
+    name: project_name
+    environment: environment_type
+  
+  admin:
+    email: admin_email
+    password: admin_password
+  
+  database:
+    type: database_type
+  
+  network:
+    domain: domain_name
+  
+  email:
+    enabled: enable_email
+  
+  backup:
+    enabled: enable_backups
+
+# Validation rules for the entire flow
+validation:
+  required_fields:
+    - project_name
+    - admin_email
+    - admin_password
+    - domain_name

@@ -1,0 +1,76 @@
+{
+  "metadata": {
+    "generated_by": "openproject-config-manager",
+    "timestamp": "2025-10-12T21:23:18.961382",
+    "flow_version": "1.0.0",
+    "validation_skipped": true
+  },
+  "openproject": {
+    "project_name": "my-openproject",
+    "environment": "production"
+  },
+  "deployment": {
+    "docker_compose_template": "openproject-standard",
+    "environment_files": [
+      "openproject.env",
+      "database.env"
+    ],
+    "volumes": [
+      "openproject_data",
+      "openproject_logs"
+    ]
+  },
+  "_raw_responses": {
+    "project": {
+      "name": "my-openproject",
+      "environment": "production"
+    },
+    "admin": {
+      "email": "admin@example.com",
+      "password": "SecurePassword123!"
+    },
+    "database": {
+      "type": "postgresql",
+      "setup": "container"
+    },
+    "network": {
+      "domain": "openproject.example.com"
+    },
+    "email": {
+      "enabled": true,
+      "delivery_method": "smtp",
+      "smtp": {
+        "host": "smtp.example.com",
+        "port": "587",
+        "encryption": "starttls",
+        "username": "openproject@example.com",
+        "password": "EmailPassword123!",
+        "from_address": "openproject@example.com"
+      }
+    },
+    "storage": {
+      "attachments_enabled": true,
+      "attachment_max_size": "100",
+      "attachment_path": "/var/openproject/files"
+    },
+    "repositories": {
+      "enabled": true,
+      "git_support": true,
+      "svn_support": false
+    },
+    "resources": {
+      "memory_limit": "8g",
+      "worker_processes": "6"
+    },
+    "backup": {
+      "enabled": true,
+      "frequency": "daily",
+      "retention_days": "30"
+    },
+    "monitoring": {
+      "log_level": "warn",
+      "metrics_enabled": true
+    }
+  },
+  "_note": "Configuration generated without validation - suitable for testing only"
+}

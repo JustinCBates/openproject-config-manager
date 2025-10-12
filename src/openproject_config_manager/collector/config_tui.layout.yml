@@ -1,10 +1,10 @@
-flow_id: openproject_collector_flow
 title: OpenProject Configuration Wizard
 description: Comprehensive setup wizard for OpenProject deployment
 icon: 🏗️
 version: "1.0.0"
 
 metadata:
+  id: config_tui.layout
   author: "OpenProject Config Manager"
   category: "deployment"
   tags: ["openproject", "configuration", "deployment", "docker"]
@@ -58,13 +58,10 @@ steps:
     message: "Deployment environment:"
     instruction: "This affects default security and performance settings"
     choices:
-      - name: "Development (Local testing)"
-        value: "development"
-      - name: "Staging (Pre-production testing)"
-        value: "staging"
-      - name: "Production (Live deployment)"
-        value: "production"
-    default: "development"
+      - "Development (Local testing)"
+      - "Staging (Pre-production testing)"
+      - "Production (Live deployment)"
+    default: "Development (Local testing)"
 
   # Database Configuration
   - id: database_section
