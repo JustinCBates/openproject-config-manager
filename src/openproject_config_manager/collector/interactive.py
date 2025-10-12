@@ -70,6 +70,9 @@ class InteractiveCollector:
             config_data.get('proxy', {}), discovered_data
         )
         
+        # URL configuration
+        config_data = self._collect_url_config(config_data, discovered_data)
+        
         # Storage configuration
         config_data['storage'] = self._collect_storage_config(
             config_data.get('storage', {}), discovered_data
@@ -128,6 +131,8 @@ class InteractiveCollector:
             'secret_key_base': '',
             'rails_env': 'production',
             'rails_cache_store': 'memcache',
+            'uri_namespace_enabled': False,
+            'uri_namespace': '',
             'database': {
                 'adapter': 'postgresql',
                 'host': 'db',
@@ -322,6 +327,64 @@ class InteractiveCollector:
         )
         
         return proxy_config
+    
+    def _collect_url_config(self, config_data: Dict[str, Any], 
+                           discovered_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Collect URL and namespace configuration."""
+        self.ui.show_section_header("URL Configuration")
+        
+        # Show helpful information
+        self.ui.show_info("Configure how OpenProject URLs will be structured")
+        
+        # URI namespace enabled
+        uri_namespace_enabled = self.ui.confirm(
+            "Enable URI namespacing?\n"
+            "  This allows you to host OpenProject at a subpath like '/projects' or '/openproject'",
+            default=config_data.get('uri_namespace_enabled', False)
+        )
+        
+        config_data['uri_namespace_enabled'] = uri_namespace_enabled
+        
+        if uri_namespace_enabled:
+            # Show examples to help users understand
+            self.ui.show_info("Examples of URI namespaces:")
+            self.ui.show_info("  • '/openproject' → https://example.com/openproject")
+            self.ui.show_info("  • '/projects' → https://example.com/projects") 
+            self.ui.show_info("  • '/mycompany' → https://example.com/mycompany")
+            self.ui.show_info("  • '/StatesmenProjects' → https://example.com/StatesmenProjects")
+            
+            # Get the namespace path
+            current_namespace = config_data.get('uri_namespace', '')
+            if current_namespace and not current_namespace.startswith('/'):
+                current_namespace = f"/{current_namespace}"
+                
+            uri_namespace = self.ui.prompt(
+                "URI namespace path (should start with '/'):\n"
+                "  Enter the path where OpenProject will be accessible",
+                default=current_namespace or '/openproject'
+            )
+            
+            # Validate and clean the namespace
+            if not uri_namespace.startswith('/'):
+                uri_namespace = f"/{uri_namespace}"
+            
+            # Remove trailing slash if present
+            if uri_namespace.endswith('/') and len(uri_namespace) > 1:
+                uri_namespace = uri_namespace.rstrip('/')
+                
+            config_data['uri_namespace'] = uri_namespace
+            
+            # Show confirmation
+            proxy_domain = config_data.get('proxy', {}).get('domain', 'example.com')
+            self.ui.show_success(f"OpenProject will be accessible at: https://{proxy_domain}{uri_namespace}")
+            
+        else:
+            # If namespace is disabled, ensure it's not set
+            config_data['uri_namespace'] = ''
+            proxy_domain = config_data.get('proxy', {}).get('domain', 'example.com')
+            self.ui.show_info(f"OpenProject will be accessible at the root: https://{proxy_domain}")
+        
+        return config_data
     
     def _collect_storage_config(self, storage_config: Dict[str, Any], 
                               discovered_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -585,6 +648,20 @@ class InteractiveCollector:
         if configuration.proxy.additional_domains:
             proxy_settings.append(f"Additional Domains: {len(configuration.proxy.additional_domains)}")
         summary_table.add_row("Proxy", "\\n".join(proxy_settings))
+        
+        # URL settings
+        url_settings = []
+        uri_namespace_enabled = getattr(configuration, 'uri_namespace_enabled', False)
+        uri_namespace = getattr(configuration, 'uri_namespace', '')
+        
+        if uri_namespace_enabled and uri_namespace:
+            url_settings.append(f"Namespace: Enabled ({uri_namespace})")
+            url_settings.append(f"Access URL: https://{configuration.proxy.domain}{uri_namespace}")
+        else:
+            url_settings.append("Namespace: Disabled")
+            url_settings.append(f"Access URL: https://{configuration.proxy.domain}")
+            
+        summary_table.add_row("URL", "\\n".join(url_settings))
         
         # Storage settings
         storage_settings = [

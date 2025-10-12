@@ -39,7 +39,7 @@ class ConsoleUI:
         """Show a phase header with optional description."""
         phase_text = Text(f"Phase: {phase}", style="bold bright_green")
         if description:
-            content = f"{phase_text}\\n{description}"
+            content = f"{phase_text}\n{description}"
         else:
             content = phase_text
         
@@ -102,7 +102,7 @@ class ConsoleUI:
                     continue
                 return result
             except KeyboardInterrupt:
-                self.show_error("\\nOperation cancelled by user")
+                self.show_error("\nOperation cancelled by user")
                 sys.exit(1)
     
     def prompt_int(self, message: str, default: Optional[int] = None, 
@@ -138,7 +138,7 @@ class ConsoleUI:
                     
                 return result
             except KeyboardInterrupt:
-                self.show_error("\\nOperation cancelled by user")
+                self.show_error("\nOperation cancelled by user")
                 sys.exit(1)
     
     def prompt_password(self, message: str = "Password") -> str:
@@ -159,7 +159,7 @@ class ConsoleUI:
                     continue
                 return password
             except KeyboardInterrupt:
-                self.show_error("\\nOperation cancelled by user")
+                self.show_error("\nOperation cancelled by user")
                 sys.exit(1)
     
     def confirm(self, message: str, default: bool = True) -> bool:
@@ -176,7 +176,7 @@ class ConsoleUI:
         try:
             return Confirm.ask(message, default=default, console=self.console)
         except KeyboardInterrupt:
-            self.show_error("\\nOperation cancelled by user")
+            self.show_error("\nOperation cancelled by user")
             sys.exit(1)
     
     def select(self, message: str, choices: List[str], default: Optional[str] = None) -> str:
@@ -195,7 +195,7 @@ class ConsoleUI:
             raise ValueError("Choices list cannot be empty")
         
         # Show choices
-        self.console.print(f"\\n[bold]{message}[/bold]")
+        self.console.print(f"\n[bold]{message}[/bold]")
         for i, choice in enumerate(choices, 1):
             if choice == default:
                 self.console.print(f"  {i}. [bright_green]{choice}[/bright_green] (default)")
@@ -226,7 +226,7 @@ class ConsoleUI:
                     self.show_error("Please enter a valid number")
                     
             except KeyboardInterrupt:
-                self.show_error("\\nOperation cancelled by user")
+                self.show_error("\nOperation cancelled by user")
                 sys.exit(1)
     
     def show_progress(self, description: str = "Working..."):
@@ -331,9 +331,9 @@ class ConsoleUI:
             message: Message to display
         """
         try:
-            self.console.input(f"\\n[dim]{message}[/dim]")
+            self.console.input(f"\n[dim]{message}[/dim]")
         except KeyboardInterrupt:
-            self.show_error("\\nOperation cancelled by user")
+            self.show_error("\nOperation cancelled by user")
             sys.exit(1)
     
     def show_spinner(self, message: str):

@@ -238,6 +238,12 @@ class Configuration(BaseModel):
         lines.append(f'SESSION_COOKIE_SECURE="{str(self.session_cookie_secure).lower()}"')
         lines.append("")
         
+        # URL Configuration 
+        lines.append("# URL Configuration")
+        lines.append(f'URI_NAMESPACE_ENABLED="{str(getattr(self, "uri_namespace_enabled", False)).lower()}"')
+        lines.append(f'URI_NAMESPACE="{getattr(self, "uri_namespace", "")}"')
+        lines.append("")
+        
         # Feature settings
         lines.append("# Feature Configuration")
         lines.append(f'ATTACHMENTS_STORAGE="{self.attachments_storage}"')
@@ -330,4 +336,6 @@ class Configuration(BaseModel):
             attachments_storage=config_data.get('ATTACHMENTS_STORAGE', 'file'),
             log_level=config_data.get('LOG_LEVEL', 'info'),
             rails_log_to_stdout=config_data.get('RAILS_LOG_TO_STDOUT', 'true').lower() == 'true',
+            uri_namespace_enabled=config_data.get('URI_NAMESPACE_ENABLED', 'false').lower() == 'true',
+            uri_namespace=config_data.get('URI_NAMESPACE', ''),
         )

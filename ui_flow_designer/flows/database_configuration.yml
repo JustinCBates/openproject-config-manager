@@ -1,0 +1,66 @@
+flow_id: "database_configuration"
+title: "Database Configuration"
+description: "Configure database connection and storage settings"
+icon: "🗄️"
+
+steps:
+  - id: "database_adapter"
+    type: "select"
+    message: "Select database adapter:"
+    choices:
+      - "postgresql"
+      - "mysql"
+    default: "postgresql"
+    instruction: "PostgreSQL recommended for production environments"
+    
+  - id: "database_host"
+    type: "text"
+    message: "Database host:"
+    default: "db"
+    instruction: "Hostname or IP address of database server"
+    
+  - id: "database_port"
+    type: "text"
+    message: "Database port:"
+    default: "5432"
+    instruction: "5432 for PostgreSQL, 3306 for MySQL"
+    
+  - id: "database_name"
+    type: "text"
+    message: "Database name:"
+    default: "openproject"
+    instruction: "Name of the OpenProject database"
+    
+  - id: "database_username"
+    type: "text"
+    message: "Database username:"
+    default: "openproject"
+    instruction: "Database user for OpenProject"
+    
+  - id: "generate_db_password"
+    type: "confirm"
+    message: "Generate secure database password?"
+    default: true
+    instruction: "Recommended for security"
+    
+  - id: "database_password"
+    type: "text"
+    message: "Enter database password:"
+    when: "generate_db_password == false"
+    instruction: "Use a strong password for security"
+    
+  - id: "database_encoding"
+    type: "text"
+    message: "Database encoding:"
+    default: "utf8"
+    instruction: "Character encoding for the database"
+
+output_mapping:
+  database_adapter: "database.adapter"
+  database_host: "database.host"
+  database_port: "database.port"
+  database_name: "database.name"
+  database_username: "database.username"
+  generate_db_password: "database.generate_password"
+  database_password: "database.password"
+  database_encoding: "database.encoding"

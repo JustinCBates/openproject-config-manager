@@ -71,7 +71,9 @@ def configure(ctx, output):
         console.print("\n[yellow]Configuration cancelled by user[/yellow]")
         sys.exit(1)
     except Exception as e:
-        console.print(f"\n[red]Configuration failed: {e}[/red]")
+        # Escape the error message to prevent Rich markup issues
+        error_msg = str(e).replace('[', '\\[').replace(']', '\\]')
+        console.print(f"\n[red]Configuration failed: {error_msg}[/red]")
         if verbose:
             console.print_exception()
         sys.exit(1)

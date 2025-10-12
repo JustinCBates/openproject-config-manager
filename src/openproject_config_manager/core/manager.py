@@ -11,10 +11,17 @@ from ..core.config import Configuration
 from ..discovery.environment import EnvironmentDiscovery
 from ..discovery.system import SystemDiscovery
 from ..discovery.docker import DockerDiscovery
-from ..collector.interactive import InteractiveCollector
+# from ..collector.interactive import InteractiveCollector  # Temporarily disabled during migration
 from ..validation.validator import ConfigurationValidator
 from ..export.cfg_writer import CfgWriter
-from ..ui.console import ConsoleUI
+from ..ui.questionary_ui import QuestionaryUI
+
+# Import the new flow engine
+import sys
+from pathlib import Path
+ui_flow_designer_path = Path(__file__).parent.parent.parent.parent / "ui_flow_designer"
+sys.path.append(str(ui_flow_designer_path))
+from engine.flow_engine import FlowEngine
 
 
 logger = logging.getLogger(__name__)
@@ -46,11 +53,16 @@ class ConfigurationManager:
         )
         
         # Initialize components
-        self.ui = ConsoleUI()
+        self.ui = QuestionaryUI()
         self.env_discovery = EnvironmentDiscovery()
         self.system_discovery = SystemDiscovery()
         self.docker_discovery = DockerDiscovery()
-        self.collector = InteractiveCollector(ui=self.ui)
+        
+        # Initialize flow engine with flows directory
+        flows_dir = Path(__file__).parent.parent.parent.parent / "ui_flow_designer" / "flows"
+        self.flow_engine = FlowEngine(flows_dir=str(flows_dir))
+        
+        # Note: Legacy InteractiveCollector removed during Questionary migration
         self.validator = ConfigurationValidator()
         self.exporter = CfgWriter()
         
@@ -121,12 +133,55 @@ class ConfigurationManager:
         try:
             # Initialize configuration with discovered defaults
             initial_config = self._create_initial_config()
+            initial_data = initial_config.dict() if initial_config else {}
             
-            # Run interactive collection
-            self.configuration = self.collector.collect_configuration(
-                initial_config=initial_config,
-                discovered_data=self.discovered_data
-            )
+            # Prepare variables for flow engine
+            flow_variables = {
+                'discovered_data': self.discovered_data,
+                'initial_config': initial_data,
+                'system_data': self.discovered_data.get('system', {}),
+                'docker_data': self.discovered_data.get('docker', {}),
+                'env_data': self.discovered_data.get('environment', {}),
+            }
+            
+            # Run flows in sequence to collect configuration
+            config_data = {}
+            
+            # Core configuration flow
+            self.ui.show_step("Collecting core OpenProject settings...")
+            core_result = self.flow_engine.execute_flow('core_configuration', context=flow_variables)
+            config_data.update(core_result)
+            flow_variables.update(core_result)
+            
+            # Database configuration flow
+            self.ui.show_step("Collecting database configuration...")
+            db_result = self.flow_engine.execute_flow('database_configuration', context=flow_variables)
+            config_data['database'] = db_result
+            flow_variables['database'] = db_result
+            
+            # Proxy configuration flow
+            self.ui.show_step("Collecting proxy configuration...")
+            proxy_result = self.flow_engine.execute_flow('proxy_configuration', context=flow_variables)
+            config_data['proxy'] = proxy_result
+            flow_variables['proxy'] = proxy_result
+            
+            # URL configuration flow
+            self.ui.show_step("Collecting URL configuration...")
+            url_result = self.flow_engine.execute_flow('url_configuration', context=flow_variables)
+            config_data.update(url_result)
+            flow_variables.update(url_result)
+            
+            # Storage configuration flow
+            self.ui.show_step("Collecting storage configuration...")
+            storage_result = self.flow_engine.execute_flow('storage_configuration', context=flow_variables)
+            config_data['storage'] = storage_result
+            flow_variables['storage'] = storage_result
+            
+            # Create configuration object
+            self.configuration = Configuration(**config_data)
+            
+            # Show summary
+            self._show_configuration_summary(self.configuration)
             
             logger.info("Interactive collection phase completed successfully")
             return self.configuration
@@ -354,11 +409,62 @@ class ConfigurationManager:
         try:
             return Configuration(**defaults) if defaults else Configuration(
                 secret_key_base="",
-                proxy={"domain": "openproject.local"}
+                proxy={"domain": "openproject.local"},
+                database={
+                    "adapter": "postgresql",
+                    "host": "db", 
+                    "port": 5432,
+                    "name": "openproject",
+                    "username": "openproject",
+                    "password": "changeme"  # Default password, will be collected in flow
+                }
             )
         except Exception:
             # Fallback to minimal configuration
             return Configuration(
                 secret_key_base="",
-                proxy={"domain": "openproject.local"}
+                proxy={"domain": "openproject.local"},
+                database={
+                    "adapter": "postgresql",
+                    "host": "db",
+                    "port": 5432, 
+                    "name": "openproject",
+                    "username": "openproject",
+                    "password": "changeme"  # Default password
+                }
             )
+    
+    def _show_configuration_summary(self, configuration: Configuration):
+        """Show a summary of the collected configuration."""
+        self.ui.show_section_header("Configuration Summary")
+        
+        # Show key configuration details
+        self.ui.show_info(f"Environment: {configuration.rails_env}")
+        self.ui.show_info(f"Database: {configuration.database.adapter} on {configuration.database.host}:{configuration.database.port}")
+        self.ui.show_info(f"Domain: {configuration.proxy.domain}")
+        self.ui.show_info(f"SSL: {'Enabled' if configuration.proxy.ssl_enabled else 'Disabled'}")
+        
+        # Show URL configuration
+        uri_namespace_enabled = getattr(configuration, 'uri_namespace_enabled', False)
+        uri_namespace = getattr(configuration, 'uri_namespace', '')
+        
+        if uri_namespace_enabled and uri_namespace:
+            self.ui.show_info(f"Namespace: Enabled ({uri_namespace})")
+            self.ui.show_info(f"Access URL: https://{configuration.proxy.domain}{uri_namespace}")
+        else:
+            self.ui.show_info("Namespace: Disabled")
+            self.ui.show_info(f"Access URL: https://{configuration.proxy.domain}")
+        
+        # Show any warnings
+        warnings = []
+        if not configuration.proxy.ssl_enabled:
+            warnings.append("SSL is disabled - not recommended for production")
+        if configuration.rails_env == 'development':
+            warnings.append("Development environment selected")
+        
+        if warnings:
+            self.ui.show_warning("Configuration Warnings:")
+            for warning in warnings:
+                self.ui.show_warning(f"  - {warning}")
+        
+        self.ui.show_success("Configuration summary complete")

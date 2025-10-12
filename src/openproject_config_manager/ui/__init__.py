@@ -1,5 +1,7 @@
-"""UI package for rich console interface."""
+"""UI package for console interfaces."""
 
-from .console import ConsoleUI
+# Legacy Rich-based UI temporarily disabled during Questionary migration
+# from .console import ConsoleUI
+from .questionary_ui import QuestionaryUI
 
-__all__ = ["ConsoleUI"]
+__all__ = ["QuestionaryUI"]
