@@ -19,7 +19,7 @@ This directory contains all control flow related files for the config-manager co
 ### For Development
 ```bash
 # Analyze current flows
-cd control_flows
+cd design_specs
 python analyze_control_flows.py
 
 # Apply planned changes

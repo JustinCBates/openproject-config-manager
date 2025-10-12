@@ -58,8 +58,8 @@ class ConfigurationManager:
         self.system_discovery = SystemDiscovery()
         self.docker_discovery = DockerDiscovery()
         
-        # Initialize flow engine with flows directory
-        flows_dir = Path(__file__).parent.parent.parent.parent / "ui_flow_designer" / "flows"
+        # Initialize flow engine with tui_layouts directory
+        flows_dir = Path(__file__).parent.parent.parent.parent / "ui_flow_designer" / "tui_layouts"
         self.flow_engine = FlowEngine(flows_dir=str(flows_dir))
         
         # Note: Legacy InteractiveCollector removed during Questionary migration
