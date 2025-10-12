@@ -106,29 +106,27 @@ module = [
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["testing/unit", "testing/integration", "testing/e2e"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = [
     "--strict-markers",
     "--strict-config",
-    "--cov=openproject_config_manager",
-    "--cov-report=term-missing",
-    "--cov-report=html",
-    "--cov-report=xml",
     "-v"
 ]
 markers = [
-    "unit: marks tests as unit tests",
-    "integration: marks tests as integration tests",
-    "slow: marks tests as slow running tests",
+    "ui: UI component tests",
+    "e2e: End-to-end workflow tests", 
+    "integration: Integration tests",
+    "slow: Slow running tests",
+    "unit: Fast unit tests"
 ]
 
 [tool.coverage.run]
 source = ["openproject_config_manager"]
 omit = [
-    "*/tests/*",
+    "*/testing/*",
     "*/test_*",
     "setup.py",
 ]

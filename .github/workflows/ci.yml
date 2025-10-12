@@ -39,16 +39,16 @@ jobs:
           pip install -e ".[dev]"
 
       - name: Run Black (code formatting)
-        run: black --check --diff src tests
+        run: black --check --diff src testing
 
       - name: Run Flake8 (linting)
-        run: flake8 src tests
+        run: flake8 src testing
 
       - name: Run MyPy (type checking)
         run: mypy src --ignore-missing-imports
 
       - name: Check import sorting (isort)
-        run: isort --check-only --diff src tests
+        run: isort --check-only --diff src testing
 
   # Security Scanning
   security:
@@ -139,7 +139,7 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          pytest tests/ \
+          pytest testing/unit/ testing/integration/ testing/e2e/ \
             --cov=openproject_config_manager \
             --cov-report=xml \
             --cov-report=html \
