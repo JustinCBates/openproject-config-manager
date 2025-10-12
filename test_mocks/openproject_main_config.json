@@ -1,0 +1,23 @@
+{
+    "project_name": "my-openproject",
+    "admin_email": "admin@example.com",
+    "database_type": "postgresql",
+    "database_host": "localhost",
+    "database_port": "5432",
+    "database_name": "openproject",
+    "database_username": "openproject",
+    "database_password": "secure-password-123",
+    "domain": "openproject.example.com",
+    "ssl_enabled": true,
+    "https_port": "443",
+    "email_delivery_method": "smtp",
+    "smtp_host": "smtp.example.com",
+    "smtp_port": "587",
+    "smtp_username": "openproject@example.com",
+    "smtp_password": "email-password-123",
+    "enable_attachments": true,
+    "attachment_max_size": "100",
+    "enable_git_repositories": true,
+    "enable_subversion": false,
+    "memory_limit": "4g"
+}

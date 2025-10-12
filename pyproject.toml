@@ -39,6 +39,8 @@ dependencies = [
     "psutil>=5.9.0",
     "netifaces>=0.11.0",
     "cryptography>=41.0.0",
+    # TUI Form Engine for interactive configuration collection
+    "tui-form-engine>=1.0.0",
 ]
 
 [project.optional-dependencies]

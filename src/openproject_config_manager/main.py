@@ -119,6 +119,62 @@ def update(ctx, config_file, output):
 
 
 @cli.command()
+@click.option('--output-dir', '-o', type=click.Path(), default='output',
+              help='Output directory for generated files (default: output)')
+@click.option('--flow', '-f', default='openproject_main_config',
+              help='Flow name to execute (default: openproject_main_config)')
+@click.option('--mock-file', '-m', type=click.Path(exists=True),
+              help='JSON file with mock responses for testing')
+@click.pass_context
+def collect(ctx, output_dir, flow, mock_file):
+    """Collect configuration using TUI Form Engine workflows."""
+    verbose = ctx.obj['verbose']
+    project_root = ctx.obj['project_root']
+    
+    console = Console()
+    
+    try:
+        # Import the TUI collector
+        from .collector.tui_collector import OpenProjectConfigCollector
+        
+        # Initialize collector
+        collector = OpenProjectConfigCollector(
+            flows_dir=str(Path(project_root) / "flows"),
+            output_dir=output_dir
+        )
+        
+        if mock_file:
+            # Test mode with mock responses
+            console.print(f"🧪 Testing flow '{flow}' with mock responses from {mock_file}")
+            import json
+            with open(mock_file) as f:
+                mock_responses = json.load(f)
+            
+            config = collector.test_flow(flow, mock_responses)
+            console.print("✅ Test completed successfully!")
+            
+        else:
+            # Interactive mode
+            console.print(f"🎯 Starting interactive configuration collection...")
+            config = collector.collect_configuration(flow)
+        
+        console.print(f"\n🎉 Configuration collection complete!")
+        console.print(f"📁 Output directory: {output_dir}")
+        console.print(f"✅ Ready for deployment!")
+        
+    except ImportError as e:
+        console.print(f"❌ TUI Form Engine not available: {e}")
+        console.print("💡 Install with: pip install tui-form-engine")
+        sys.exit(1)
+    except Exception as e:
+        console.print(f"❌ Configuration collection failed: {e}")
+        if verbose:
+            import traceback
+            console.print(traceback.format_exc())
+        sys.exit(1)
+
+
+@cli.command()
 @click.argument('config_file', type=click.Path(exists=True))
 @click.pass_context
 def validate(ctx, config_file):
