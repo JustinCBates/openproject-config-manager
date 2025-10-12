@@ -1,4 +1,4 @@
-#!/opt/openproject/external/config-manager/test_env/bin/python3
+#!/opt/openproject/external/config-manager/test_env/bin/python
 # -*- coding: utf-8 -*-
 import re
 import sys

@@ -269,36 +269,40 @@ PROBER_ENABLED="true"
 
 ## Dependencies
 
-### Required Dependencies
+### Production (End Users)
 
-```toml
-dependencies = [
-    "python-dotenv>=1.0.0",    # .env file handling
-    "pyyaml>=6.0",              # .cfg file handling
-    "rich>=13.0.0",             # Terminal UI
-    "docker>=7.0.0",            # Docker SDK
-    "click>=8.1.0",             # CLI framework
-]
-```
+**Required:**
+- `click>=8.1.0` - CLI framework
+- `rich>=13.0.0` - Terminal UI/formatting
+- `pydantic>=2.0.0` - Data validation
+- `python-dotenv>=1.0.0` - Environment variables
+- `pyyaml>=6.0.0` - YAML parsing
 
-### External Dependencies
+**Optional Features:**
+- `docker>=7.0.0` - Docker integration (if using docker features)
+- `requests>=2.31.0` - HTTP requests (if using external services)
+- `psutil>=5.9.0` - System monitoring (if using system discovery)
+- `cryptography>=41.0.0` - SSL/crypto (if generating certificates)
+- `netifaces>=0.11.0` - Network interfaces (if doing network discovery)
 
-- **docker-prober-utility**: Live validation of HTTP/HTTPS endpoints
-  ```toml
-  docker-prober-utility @ git+https://github.com/JustinCBates/docker_prober_utility.git@main
-  ```
+### Development (Contributors)
 
-### Development Dependencies
+**Required:**
+- `pytest>=7.0.0` - Testing framework
+- `pytest-json-report` - Test reporting
+- `black>=23.0.0` - Code formatting
+- `flake8>=6.0.0` - Code linting
+- `mypy>=1.0.0` - Type checking
 
-```toml
-dev-dependencies = [
-    "pytest>=7.0.0",
-    "pytest-cov>=4.0.0",
-    "black>=23.0.0",
-    "flake8>=6.0.0",
-    "mypy>=1.0.0",
-]
-```
+**Optional Tools:**
+- `pytest-cov>=4.0.0` - Test coverage (if doing coverage analysis)
+- `pytest-mock>=3.11.0` - Test mocking (if doing advanced testing)
+- `bandit>=1.7.0` - Security linting (if doing security analysis)
+- `safety>=2.3.0` - Security scanning (if scanning dependencies)
+- `sphinx>=5.0.0` - Documentation (if generating docs)
+- `git` - Version control
+- `python>=3.8` - Python runtime
+
 
 ## Development
 
