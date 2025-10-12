@@ -1,14 +1,78 @@
-[tool.bandit]
-# Bandit security linting configuration
-exclude_dirs = ["tests", "docs"]
-skips = ["B101"]  # Skip assert_used test
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
 
-[tool.bandit.assert_used]
-# Allow assert in tests
-skips = ["**/test_*.py", "**/tests.py"]
+[project]
+name = "openproject-config-manager"
+version = "0.1.0"
+description = "Interactive configuration management for Docker Compose projects with intelligent discovery and live validation"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "OpenProject Contributors", email = "openproject@example.com"}
+]
+keywords = ["configuration", "docker", "docker-compose", "interactive", "validation"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Systems Administration",
+]
+
+dependencies = [
+    "click>=8.1.0",
+    "rich>=13.0.0",
+    "pydantic>=2.0.0",
+    "python-dotenv>=1.0.0",
+    "pyyaml>=6.0.0",
+    "docker>=7.0.0",
+    "requests>=2.31.0",
+    "psutil>=5.9.0",
+    "netifaces>=0.11.0",
+    "cryptography>=41.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.11.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+    "isort>=5.12.0",
+    "bandit[toml]>=1.7.0",
+    "safety>=2.3.0",
+]
+
+[project.scripts]
+config-manager = "openproject_config_manager.main:main"
+
+[project.urls]
+Homepage = "https://github.com/JustinCBates/openproject-config-manager"
+Documentation = "https://github.com/JustinCBates/openproject-config-manager/blob/main/README.md"
+Repository = "https://github.com/JustinCBates/openproject-config-manager.git"
+Issues = "https://github.com/JustinCBates/openproject-config-manager/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.black]
+line-length = 88
+target-version = ['py38', 'py39', 'py310', 'py311', 'py312']
+include = '\.pyi?$'
 
 [tool.isort]
-# Import sorting configuration
 profile = "black"
 multi_line_output = 3
 include_trailing_comma = true
@@ -17,10 +81,8 @@ use_parentheses = true
 ensure_newline_before_comments = true
 line_length = 88
 known_first_party = ["openproject_config_manager"]
-known_third_party = ["click", "rich", "docker", "dotenv", "yaml"]
 
 [tool.mypy]
-# Type checking configuration
 python_version = "3.8"
 warn_return_any = true
 warn_unused_configs = true
@@ -43,19 +105,35 @@ module = [
 ]
 ignore_missing_imports = true
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--cov=openproject_config_manager",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml",
+    "-v"
+]
+markers = [
+    "unit: marks tests as unit tests",
+    "integration: marks tests as integration tests",
+    "slow: marks tests as slow running tests",
+]
+
 [tool.coverage.run]
-# Coverage configuration
 source = ["openproject_config_manager"]
 omit = [
     "*/tests/*",
     "*/test_*",
     "setup.py",
-    "venv/*",
-    ".venv/*",
 ]
 
 [tool.coverage.report]
-# Coverage reporting
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",
@@ -68,55 +146,3 @@ exclude_lines = [
     "class .*\\bProtocol\\):",
     "@(abc\\.)?abstractmethod",
 ]
-ignore_errors = true
-
-[tool.coverage.html]
-directory = "htmlcov"
-
-[tool.pytest.ini_options]
-# Pytest configuration
-testpaths = ["tests"]
-python_files = ["test_*.py", "*_test.py"]
-python_classes = ["Test*", "*Tests"]
-python_functions = ["test_*"]
-addopts = [
-    "--strict-markers",
-    "--strict-config",
-    "--verbose",
-    "--tb=short",
-    "--cov-report=term-missing:skip-covered",
-    "--cov-report=html:htmlcov",
-    "--cov-report=xml",
-]
-markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "integration: marks tests as integration tests",
-    "docker: marks tests that require Docker",
-    "network: marks tests that require network access",
-]
-filterwarnings = [
-    "error",
-    "ignore::UserWarning",
-    "ignore::DeprecationWarning",
-]
-
-[tool.black]
-# Black code formatting
-line-length = 88
-target-version = ['py38', 'py39', 'py310', 'py311', 'py312']
-include = '\.pyi?$'
-extend-exclude = '''
-/(
-  # directories
-  \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | _build
-  | buck-out
-  | build
-  | dist
-)/
-'''
