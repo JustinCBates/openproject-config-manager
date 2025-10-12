@@ -1,0 +1,45 @@
+[flake8]
+max-line-length = 88
+extend-ignore = 
+    # E203: whitespace before ':' (conflicts with black)
+    E203,
+    # E501: line too long (handled by black)
+    E501,
+    # W503: line break before binary operator (conflicts with black)
+    W503,
+    # F401: imported but unused (handled by isort and mypy)
+    F401
+
+exclude = 
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    .eggs,
+    *.egg,
+    build,
+    dist,
+    .tox,
+    docs,
+
+per-file-ignores =
+    # Tests can have unused imports and long lines
+    tests/*: F401, E501
+    # __init__.py files can have unused imports
+    __init__.py: F401
+
+max-complexity = 10
+
+# Flake8 plugins configuration
+# flake8-docstrings
+docstring-convention = google
+
+# flake8-import-order
+import-order-style = google
+application-import-names = openproject_config_manager
+
+# flake8-bugbear
+extend-immutable-calls = 
+    click.option,
+    click.argument,
+    rich.console.Console
