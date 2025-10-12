@@ -1,6 +1,13 @@
 # Configuration Manager
 
-Interactive configuration management for Docker Compose projects with intelligent discovery and live validation.
+Interactive configuration management for Docker Compose projects with intelligent discover### Phase 4: Final Configuration Export
+```
+Export for Deployment
+├── Generate primary .cfg file (interactive_config.cfg)
+├── Convert .cfg to .env format (for Docker Compose)
+├── Create template variables (for Jinja2 rendering)
+└── Hand off to Deploy Manager
+```ve validation.
 
 ## Features
 
@@ -186,11 +193,33 @@ Export for Deployment
 #### 5. Configuration Finalizer (`finalizer.py`)
 **Purpose**: Generate final configuration files
 
-**Actions**:
-- Backup existing configurations
-- Merge discovery results + user input + validation fixes
-- Generate `.env` file (environment variables)
-- Generate `.cfg` file (configuration metadata)
+**Primary Output**: `interactive_config.cfg` file
+- **Format**: Bash-style key="value" pairs
+- **Content**: Complete deployment configuration
+- **Usage**: Consumed by Deployment Manager for build process
+
+**Secondary Outputs**:
+- `.env` file (Docker Compose environment variables)
+- Template variables (for Jinja2 rendering)
+- Configuration backup and metadata
+
+**Configuration File Structure**:
+```bash
+# interactive_config.cfg
+# Core OpenProject Configuration
+DOMAIN_NAME="myproject.example.com"
+OPENPROJECT_HTTPS="true"
+PORT="8080"
+
+# Database Configuration  
+DATABASE_URL="postgres://..."
+POSTGRES_PASSWORD="secure_password"
+
+# Deployment Settings
+PROXY_TYPE="caddy"
+PROBER_ENABLED="true"
+# ... (see interactive_config.cfg.example for complete format)
+```
 - Provide next-step instructions
 
 #### 6. Core Configuration (`core.py`)
