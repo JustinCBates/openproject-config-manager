@@ -7,6 +7,11 @@ from typing import Dict, List, Optional, Any
 import logging
 from datetime import datetime
 
+# Add TUI Form Engine to Python path for development environment
+_tui_engine_path = Path(__file__).parent.parent.parent.parent.parent / "tui-form-designer" / "src"
+if _tui_engine_path.exists() and str(_tui_engine_path) not in sys.path:
+    sys.path.insert(0, str(_tui_engine_path))
+
 from ..core.config import Configuration
 from ..discovery.environment import EnvironmentDiscovery
 from ..discovery.system import SystemDiscovery
