@@ -48,7 +48,7 @@ class OpenProjectConfigCollector:
     
     def collect_configuration(
         self, 
-        flow_name: str = "config_tui.layout",
+        flow_name: str = "layouts/config_tui.layout",
         mock_responses: Dict[str, Any] = None,
         skip_validation: bool = False
     ) -> Dict[str, Any]:
@@ -295,8 +295,8 @@ def main():
     import sys
     
     parser = argparse.ArgumentParser(description="OpenProject Configuration Collector")
-    parser.add_argument("flow_name", nargs="?", default="config_tui.layout", 
-                       help="Name of the flow to execute")
+    parser.add_argument("flow_name", nargs="?", default="layouts/config_tui.layout", 
+                       help="Name of the flow to execute (default: layouts/config_tui.layout)")
     parser.add_argument("--mock-file", help="Path to JSON file with mock responses")
     parser.add_argument("--skip-validation", action="store_true",
                        help="Skip configuration validation (useful for testing layouts)")
