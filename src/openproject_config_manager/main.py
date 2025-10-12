@@ -121,8 +121,8 @@ def update(ctx, config_file, output):
 @cli.command()
 @click.option('--output-dir', '-o', type=click.Path(), default='output',
               help='Output directory for generated files (default: output)')
-@click.option('--flow', '-f', default='openproject_main_config',
-              help='Flow name to execute (default: openproject_main_config)')
+@click.option('--flow', '-f', default='openproject_collector_flow',
+              help='Flow name to execute (default: openproject_collector_flow)')
 @click.option('--mock-file', '-m', type=click.Path(exists=True),
               help='JSON file with mock responses for testing')
 @click.pass_context
@@ -139,7 +139,7 @@ def collect(ctx, output_dir, flow, mock_file):
         
         # Initialize collector
         collector = OpenProjectConfigCollector(
-            flows_dir=str(Path(project_root) / "flows"),
+            flows_dir=None,  # Use collector directory
             output_dir=output_dir
         )
         

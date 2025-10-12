@@ -1,0 +1,549 @@
+flow_id: openproject_collector_flow
+title: OpenProject Configuration Wizard
+description: Comprehensive setup wizard for OpenProject deployment
+icon: 🏗️
+version: "1.0.0"
+
+metadata:
+  author: "OpenProject Config Manager"
+  category: "deployment"
+  tags: ["openproject", "configuration", "deployment", "docker"]
+  estimated_time: "10-15 minutes"
+
+steps:
+  # Welcome and Project Basics
+  - id: welcome
+    type: info
+    title: "Welcome to OpenProject Setup"
+    message: |
+      This wizard will guide you through configuring your OpenProject instance.
+      
+      We'll collect information about:
+      • Project settings and admin account
+      • Database configuration
+      • Network and domain setup
+      • Email delivery settings
+      • Storage and repository options
+      • Resource allocation
+      
+      All settings can be changed later if needed.
+    instruction: "Press Enter to continue"
+
+  - id: project_name
+    type: text
+    message: "Project name:"
+    instruction: "Used for container names, volumes, and internal references"
+    validate: required
+    default: "openproject"
+    pattern: "^[a-zA-Z][a-zA-Z0-9_-]*$"
+    error_message: "Must start with letter, contain only letters, numbers, underscores, and hyphens"
+
+  - id: admin_email
+    type: text
+    message: "Administrator email address:"
+    instruction: "Email for the primary OpenProject administrator account"
+    validate: email
+    error_message: "Please enter a valid email address"
+
+  - id: admin_password
+    type: password
+    message: "Administrator password:"
+    instruction: "Strong password for the admin account (min 8 characters)"
+    validate: password_length
+    min_length: 8
+
+  # Environment Configuration
+  - id: environment_type
+    type: select
+    message: "Deployment environment:"
+    instruction: "This affects default security and performance settings"
+    choices:
+      - name: "Development (Local testing)"
+        value: "development"
+      - name: "Staging (Pre-production testing)"
+        value: "staging"
+      - name: "Production (Live deployment)"
+        value: "production"
+    default: "development"
+
+  # Database Configuration
+  - id: database_section
+    type: info
+    title: "Database Configuration"
+    message: |
+      OpenProject requires a database to store project data.
+      PostgreSQL is recommended for optimal performance.
+    condition: "true"
+
+  - id: database_type
+    type: select
+    message: "Database type:"
+    instruction: "PostgreSQL is recommended for production use"
+    choices:
+      - name: "PostgreSQL (Recommended)"
+        value: "postgresql"
+      - name: "MySQL/MariaDB"
+        value: "mysql"
+    default: "postgresql"
+
+  - id: database_setup
+    type: select
+    message: "Database setup:"
+    instruction: "Choose how to handle the database"
+    choices:
+      - name: "Create new database container (Recommended)"
+        value: "container"
+      - name: "Use existing external database"
+        value: "external"
+    default: "container"
+
+  # External Database Configuration (conditional)
+  - id: database_host
+    type: text
+    message: "Database host:"
+    instruction: "Hostname or IP address of your database server"
+    validate: required
+    condition: "database_setup == external"
+
+  - id: database_port
+    type: text
+    message: "Database port:"
+    instruction: "Port number for database connection"
+    default: "5432"
+    validate: integer
+    condition: "database_setup == external && database_type == postgresql"
+
+  - id: database_port_mysql
+    type: text
+    message: "Database port:"
+    instruction: "Port number for database connection"
+    default: "3306"
+    validate: integer
+    condition: "database_setup == external && database_type == mysql"
+
+  - id: database_name
+    type: text
+    message: "Database name:"
+    instruction: "Name of the OpenProject database"
+    default: "openproject"
+    validate: required
+    condition: "database_setup == external"
+
+  - id: database_username
+    type: text
+    message: "Database username:"
+    instruction: "Database user for OpenProject"
+    default: "openproject"
+    validate: required
+    condition: "database_setup == external"
+
+  - id: database_password
+    type: password
+    message: "Database password:"
+    instruction: "Password for the database user"
+    validate: required
+    condition: "database_setup == external"
+
+  # Network and Domain Configuration
+  - id: network_section
+    type: info
+    title: "Network Configuration"
+    message: |
+      Configure how users will access your OpenProject instance.
+      This includes domain name and SSL/HTTPS settings.
+
+  - id: domain_name
+    type: text
+    message: "Domain name:"
+    instruction: "Domain where OpenProject will be accessible (e.g., openproject.example.com)"
+    validate: required
+    pattern: "^([a-zA-Z0-9]([a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,}$"
+    error_message: "Please enter a valid domain name"
+
+  - id: ssl_configuration
+    type: select
+    message: "SSL/HTTPS configuration:"
+    instruction: "HTTPS is strongly recommended for production"
+    choices:
+      - name: "Enable HTTPS with Let's Encrypt (Automatic)"
+        value: "letsencrypt"
+      - name: "Enable HTTPS with custom certificates"
+        value: "custom"
+      - name: "HTTP only (Not recommended for production)"
+        value: "none"
+    default: "letsencrypt"
+    condition: "environment_type != development"
+
+  - id: ssl_configuration_dev
+    type: select
+    message: "SSL/HTTPS configuration:"
+    instruction: "For development, HTTP is typically sufficient"
+    choices:
+      - name: "HTTP only (Development default)"
+        value: "none"
+      - name: "Enable HTTPS with self-signed certificate"
+        value: "selfsigned"
+    default: "none"
+    condition: "environment_type == development"
+
+  - id: http_port
+    type: text
+    message: "HTTP port:"
+    instruction: "Port for HTTP traffic (typically 80)"
+    default: "80"
+    validate: integer
+    condition: "ssl_configuration == none || ssl_configuration_dev == none"
+
+  - id: https_port
+    type: text
+    message: "HTTPS port:"
+    instruction: "Port for HTTPS traffic (typically 443)"
+    default: "443"
+    validate: integer
+    condition: "ssl_configuration != none || ssl_configuration_dev == selfsigned"
+
+  - id: letsencrypt_email
+    type: text
+    message: "Let's Encrypt notification email:"
+    instruction: "Email for SSL certificate notifications"
+    validate: email
+    condition: "ssl_configuration == letsencrypt"
+
+  # Email Configuration
+  - id: email_section
+    type: info
+    title: "Email Configuration"
+    message: |
+      OpenProject can send notifications and emails to users.
+      Configure your email delivery method below.
+
+  - id: enable_email
+    type: confirm
+    message: "Enable email notifications?"
+    instruction: "Required for user notifications, password resets, etc."
+    default: true
+
+  - id: email_delivery_method
+    type: select
+    message: "Email delivery method:"
+    choices:
+      - name: "SMTP (Email server)"
+        value: "smtp"
+      - name: "Sendmail (Local server)"
+        value: "sendmail"
+      - name: "Disable email (Not recommended)"
+        value: "none"
+    default: "smtp"
+    condition: "enable_email == true"
+
+  # SMTP Configuration (conditional)
+  - id: smtp_host
+    type: text
+    message: "SMTP server hostname:"
+    instruction: "Your email provider's SMTP server"
+    validate: required
+    condition: "email_delivery_method == smtp"
+
+  - id: smtp_port
+    type: select
+    message: "SMTP port:"
+    instruction: "Choose based on your email provider's settings"
+    choices:
+      - name: "587 (STARTTLS - Recommended)"
+        value: "587"
+      - name: "465 (SSL/TLS)"
+        value: "465"
+      - name: "25 (Unencrypted - Not recommended)"
+        value: "25"
+    default: "587"
+    condition: "email_delivery_method == smtp"
+
+  - id: smtp_encryption
+    type: select
+    message: "SMTP encryption:"
+    choices:
+      - name: "STARTTLS (Recommended for port 587)"
+        value: "starttls"
+      - name: "SSL/TLS (For port 465)"
+        value: "ssl"
+      - name: "None (Not recommended)"
+        value: "none"
+    default: "starttls"
+    condition: "email_delivery_method == smtp"
+
+  - id: smtp_username
+    type: text
+    message: "SMTP username:"
+    instruction: "Usually your email address"
+    condition: "email_delivery_method == smtp"
+
+  - id: smtp_password
+    type: password
+    message: "SMTP password:"
+    instruction: "Password or app-specific password for SMTP"
+    condition: "email_delivery_method == smtp"
+
+  - id: smtp_from_address
+    type: text
+    message: "From email address:"
+    instruction: "Email address for outgoing notifications"
+    validate: email
+    condition: "email_delivery_method == smtp"
+
+  # Storage Configuration
+  - id: storage_section
+    type: info
+    title: "Storage Configuration"
+    message: |
+      Configure file storage options for attachments and repositories.
+
+  - id: enable_attachments
+    type: confirm
+    message: "Enable file attachments?"
+    instruction: "Allow users to upload files to work packages"
+    default: true
+
+  - id: attachment_max_size
+    type: text
+    message: "Maximum attachment size (MB):"
+    instruction: "Maximum file size for uploads"
+    default: "50"
+    validate: integer
+    condition: "enable_attachments == true"
+
+  - id: attachment_storage_path
+    type: text
+    message: "Attachment storage path:"
+    instruction: "Directory path for storing uploaded files"
+    default: "/var/openproject/files"
+    condition: "enable_attachments == true"
+
+  # Repository Configuration
+  - id: repository_section
+    type: info
+    title: "Repository Integration"
+    message: |
+      OpenProject can integrate with version control repositories.
+
+  - id: enable_repositories
+    type: confirm
+    message: "Enable repository integration?"
+    instruction: "Allow linking work packages to version control"
+    default: false
+
+  - id: git_support
+    type: confirm
+    message: "Enable Git repository support?"
+    default: true
+    condition: "enable_repositories == true"
+
+  - id: subversion_support
+    type: confirm
+    message: "Enable Subversion (SVN) repository support?"
+    default: false
+    condition: "enable_repositories == true"
+
+  # Resource Configuration
+  - id: resources_section
+    type: info
+    title: "Resource Allocation"
+    message: |
+      Configure system resources for optimal performance.
+
+  - id: memory_limit
+    type: select
+    message: "Memory limit for OpenProject:"
+    instruction: "Based on expected usage and available system memory"
+    choices:
+      - name: "2GB (Small teams, <20 users)"
+        value: "2g"
+      - name: "4GB (Medium teams, 20-100 users)"
+        value: "4g"
+      - name: "8GB (Large teams, 100-500 users)"
+        value: "8g"
+      - name: "16GB (Enterprise, >500 users)"
+        value: "16g"
+    default: "4g"
+
+  - id: worker_processes
+    type: select
+    message: "Number of worker processes:"
+    instruction: "More workers handle more concurrent users"
+    choices:
+      - name: "2 (Light usage)"
+        value: "2"
+      - name: "4 (Moderate usage)"
+        value: "4"
+      - name: "6 (Heavy usage)"
+        value: "6"
+      - name: "8 (Very heavy usage)"
+        value: "8"
+    default: "4"
+
+  # Backup Configuration
+  - id: backup_section
+    type: info
+    title: "Backup Configuration"
+    message: |
+      Configure automated backups to protect your data.
+
+  - id: enable_backups
+    type: confirm
+    message: "Enable automated backups?"
+    instruction: "Recommended for production environments"
+    default: true
+    condition: "environment_type == production"
+
+  - id: backup_frequency
+    type: select
+    message: "Backup frequency:"
+    choices:
+      - name: "Daily (Recommended)"
+        value: "daily"
+      - name: "Weekly"
+        value: "weekly"
+      - name: "Monthly"
+        value: "monthly"
+    default: "daily"
+    condition: "enable_backups == true"
+
+  - id: backup_retention
+    type: select
+    message: "Backup retention period:"
+    choices:
+      - name: "7 days"
+        value: "7"
+      - name: "30 days (Recommended)"
+        value: "30"
+      - name: "90 days"
+        value: "90"
+      - name: "1 year"
+        value: "365"
+    default: "30"
+    condition: "enable_backups == true"
+
+  # Monitoring and Logging
+  - id: monitoring_section
+    type: info
+    title: "Monitoring and Logging"
+    message: |
+      Configure monitoring and logging for system health.
+
+  - id: log_level
+    type: select
+    message: "Log level:"
+    instruction: "Higher levels provide more detailed logs"
+    choices:
+      - name: "ERROR (Minimal logging)"
+        value: "error"
+      - name: "WARN (Recommended for production)"
+        value: "warn"
+      - name: "INFO (Detailed for troubleshooting)"
+        value: "info"
+      - name: "DEBUG (Verbose, for development)"
+        value: "debug"
+    default: "warn"
+
+  - id: enable_metrics
+    type: confirm
+    message: "Enable performance metrics collection?"
+    instruction: "Useful for monitoring system performance"
+    default: false
+
+  # Final Confirmation
+  - id: configuration_summary
+    type: info
+    title: "Configuration Summary"
+    message: |
+      Configuration collection complete!
+      
+      Your OpenProject instance will be configured with:
+      • Project: {{project_name}}
+      • Environment: {{environment_type}}
+      • Database: {{database_type}} ({{database_setup}})
+      • Domain: {{domain_name}}
+      • SSL: {{ssl_configuration}}{{ssl_configuration_dev}}
+      • Email: {{email_delivery_method}}
+      • Memory: {{memory_limit}}
+      
+      The configuration will be validated and prepared for deployment.
+
+# Output mapping - transforms user responses to structured configuration
+output_mapping:
+  project:
+    name: project_name
+    environment: environment_type
+  
+  admin:
+    email: admin_email
+    password: admin_password
+  
+  database:
+    type: database_type
+    setup: database_setup
+    host: database_host
+    port: database_port
+    port_mysql: database_port_mysql
+    name: database_name
+    username: database_username
+    password: database_password
+  
+  network:
+    domain: domain_name
+    ssl_config: ssl_configuration
+    ssl_config_dev: ssl_configuration_dev
+    http_port: http_port
+    https_port: https_port
+    letsencrypt_email: letsencrypt_email
+  
+  email:
+    enabled: enable_email
+    delivery_method: email_delivery_method
+    smtp:
+      host: smtp_host
+      port: smtp_port
+      encryption: smtp_encryption
+      username: smtp_username
+      password: smtp_password
+      from_address: smtp_from_address
+  
+  storage:
+    attachments_enabled: enable_attachments
+    attachment_max_size: attachment_max_size
+    attachment_path: attachment_storage_path
+  
+  repositories:
+    enabled: enable_repositories
+    git_support: git_support
+    svn_support: subversion_support
+  
+  resources:
+    memory_limit: memory_limit
+    worker_processes: worker_processes
+  
+  backup:
+    enabled: enable_backups
+    frequency: backup_frequency
+    retention_days: backup_retention
+  
+  monitoring:
+    log_level: log_level
+    metrics_enabled: enable_metrics
+
+# Validation rules for the entire flow
+validation:
+  required_fields:
+    - project_name
+    - admin_email
+    - admin_password
+    - domain_name
+  
+  conditional_required:
+    - field: database_host
+      condition: "database_setup == external"
+    - field: database_password
+      condition: "database_setup == external"
+    - field: smtp_host
+      condition: "email_delivery_method == smtp"
+    - field: letsencrypt_email
+      condition: "ssl_configuration == letsencrypt"

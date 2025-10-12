@@ -11,8 +11,9 @@ import yaml
 from pathlib import Path
 from typing import Dict, Any
 
-# Import the lightweight TUI Form Engine (production runtime)
-from tui_form_engine import FlowEngine, FlowValidationError, FlowExecutionError
+# Import the lightweight TUI Form Engine renderer (end-user interface)
+from tui_form_engine.renderer import FormRenderer
+from tui_form_engine.core.exceptions import FlowValidationError, FlowExecutionError
 
 from ..core.config import Configuration
 from ..core.manager import ConfigurationManager
@@ -30,26 +31,32 @@ class OpenProjectConfigCollector:
     5. Output final configuration for deploy-manager
     """
     
-    def __init__(self, flows_dir: str = "flows", output_dir: str = "output"):
+    def __init__(self, flows_dir: str = None, output_dir: str = "output"):
+        # Use collector directory for flows if not specified
+        if flows_dir is None:
+            flows_dir = Path(__file__).parent
+        
         self.flows_dir = Path(flows_dir)
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)
         
-        # Initialize TUI Form Engine
-        self.engine = FlowEngine(
-            flows_dir=str(self.flows_dir),
-            theme="default"
-        )
+        # Initialize TUI Form Renderer (end-user interface)
+        self.renderer = FormRenderer()
         
         # Initialize Config Manager for validation
         self.config_manager = ConfigurationManager()
     
-    def collect_configuration(self, flow_name: str = "openproject_main_config") -> Dict[str, Any]:
+    def collect_configuration(
+        self, 
+        flow_name: str = "openproject_main_config",
+        mock_responses: Dict[str, Any] = None
+    ) -> Dict[str, Any]:
         """
         Execute the full configuration collection workflow.
         
         Args:
             flow_name: Name of the flow YAML file (without .yml extension)
+            mock_responses: Optional mock responses for testing
             
         Returns:
             Dict containing the final validated configuration
@@ -61,10 +68,16 @@ class OpenProjectConfigCollector:
         """
         print(f"🎯 Starting OpenProject configuration collection...")
         
-        # Step 1: Execute TUI flow to collect user input
+        # Step 1: Execute TUI flow to collect user input using renderer
         print(f"📋 Executing flow: {flow_name}")
         try:
-            user_responses = self.engine.execute_flow(flow_name)
+            flow_path = self.flows_dir / f"{flow_name}.yml"
+            flow_response = self.renderer.render_flow(
+                flow_path=str(flow_path),
+                mock_responses=mock_responses,
+                quiet=False
+            )
+            user_responses = flow_response["responses"]
         except (FlowValidationError, FlowExecutionError) as e:
             print(f"❌ Flow execution failed: {e}")
             raise
@@ -171,8 +184,14 @@ class OpenProjectConfigCollector:
         print(f"🧪 Testing flow: {flow_name}")
         
         try:
-            # Execute flow with mocks
-            result = self.engine.execute_flow(flow_name, mock_responses=mock_responses)
+            # Execute flow with mocks using renderer
+            flow_path = self.flows_dir / f"{flow_name}.yml"
+            flow_response = self.renderer.render_flow(
+                flow_path=str(flow_path),
+                mock_responses=mock_responses,
+                quiet=True
+            )
+            result = flow_response["responses"]
             
             # Validate the result
             config = self._transform_responses_to_config(result)
@@ -188,15 +207,35 @@ class OpenProjectConfigCollector:
 
 def main():
     """Main entry point for interactive configuration collection."""
+    import argparse
+    import sys
+    
+    parser = argparse.ArgumentParser(description="OpenProject Configuration Collector")
+    parser.add_argument("flow_name", nargs="?", default="openproject_main_config", 
+                       help="Name of the flow to execute")
+    parser.add_argument("--mock-file", help="Path to JSON file with mock responses")
+    
+    args = parser.parse_args()
+    
+    # Load mock responses if provided
+    mock_responses = None
+    if args.mock_file:
+        try:
+            with open(args.mock_file, 'r') as f:
+                mock_responses = json.load(f)
+        except Exception as e:
+            print(f"❌ Failed to load mock file: {e}")
+            return 1
+    
     collector = OpenProjectConfigCollector()
     
     try:
-        # Interactive configuration collection
-        config = collector.collect_configuration("openproject_main_config")
+        # Configuration collection (interactive or mocked)
+        config = collector.collect_configuration(args.flow_name, mock_responses)
         
         print(f"\n🎉 Configuration collection complete!")
         print(f"📁 Files generated:")
-        print(f"  - User responses: output/openproject_main_config_responses.json")
+        print(f"  - User responses: output/{args.flow_name}_responses.json")
         print(f"  - Final config: output/openproject_config.json")
         print(f"\n✅ Ready for deployment with deploy-manager!")
         
