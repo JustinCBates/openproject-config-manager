@@ -1,0 +1,12 @@
+title: OpenProject Configuration
+description: UI to gather docker build/compose variables for the OpenProject deployment
+icon: "\U0001F527"
+steps:
+- type: confirm
+  id: ProceedToBuild
+  message: Proceed with the interactive configuration.
+  default: y
+  instruction: Press Y to proceed or n to quit.
+metadata:
+  created: '2025-10-12T19:26:49.324583'
+  version: '1.0'
