@@ -1,0 +1,46 @@
+{
+    "mapping_version": "1.0.0",
+    "description": "Configuration mapping from discovery output to TUI defaults",
+    "source_file": "output/discovery/discovery_output.yml",
+    "target_file": "src/openproject_config_manager/collector/layouts/defaults/config_tui.defaults.yml",
+    "field_mappings": {
+        "domain": {
+            "source_path": "defaults.domain.value",
+            "target_key": "domain",
+            "transform": "string",
+            "fallback": "openproject.local"
+        },
+        "port": {
+            "source_path": "defaults.port.value",
+            "target_key": "port",
+            "transform": "string",
+            "fallback": "8080"
+        },
+        "memory_limit": {
+            "source_path": "defaults.memory_limit.value",
+            "target_key": "memory_limit",
+            "transform": "string",
+            "fallback": "2GB"
+        },
+        "database_setup": {
+            "source_path": "defaults.database_setup.value",
+            "target_key": "database_setup",
+            "transform": "string",
+            "fallback": "container"
+        },
+        "ssl_configuration": {
+            "source_path": "defaults.ssl_configuration.value",
+            "target_key": "ssl_configuration",
+            "transform": "string",
+            "fallback": "Self-signed certificate"
+        }
+    },
+    "output_format": {
+        "header_comments": [
+            "# Configuration defaults for TUI layout",
+            "# Generated from discovery output via defaults mapping"
+        ],
+        "structure": "simple_yaml",
+        "root_key": "defaults"
+    }
+}

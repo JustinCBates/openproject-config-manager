@@ -1,5 +1,5 @@
 # Configuration defaults for TUI layout
-# Generated from enhanced discovery defaults
+# Generated from discovery output via defaults mapping
 
 defaults:
   domain: "openproject.local"

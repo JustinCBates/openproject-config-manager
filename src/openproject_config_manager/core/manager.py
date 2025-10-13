@@ -159,7 +159,7 @@ class ConfigurationManager:
         try:
             # Load enhanced defaults file
             if not enhanced_defaults_path:
-                enhanced_defaults_path = self.project_root / "output" / "discovery" / "enhanced_defaults.yml"
+                enhanced_defaults_path = self.project_root / "output" / "discovery" / "discovery_output.yml"
             
             if not Path(enhanced_defaults_path).exists():
                 raise ValueError(f"Enhanced defaults file not found: {enhanced_defaults_path}")
@@ -719,7 +719,7 @@ class ConfigurationManager:
         output_dir.mkdir(parents=True, exist_ok=True)
         
         # Write enhanced defaults file
-        enhanced_path = output_dir / "enhanced_defaults.yml"
+        enhanced_path = output_dir / "discovery_output.yml"
         with open(enhanced_path, 'w') as f:
             yaml.dump(enhanced_defaults, f, default_flow_style=False, sort_keys=False)
         
@@ -732,30 +732,81 @@ class ConfigurationManager:
         with open(file_path, 'r') as f:
             return yaml.safe_load(f)
     
+    def _load_defaults_mapping(self) -> Dict[str, Any]:
+        """Load the defaults mapping configuration."""
+        import json
+        
+        mapping_path = Path(__file__).parent / "defaults_map.json"
+        
+        if not mapping_path.exists():
+            logger.warning(f"Defaults mapping file not found: {mapping_path}")
+            # Return basic fallback mapping
+            return {
+                "field_mappings": {
+                    "domain": {"source_path": "defaults.domain.value", "target_key": "domain", "fallback": "openproject.local"},
+                    "port": {"source_path": "defaults.port.value", "target_key": "port", "fallback": "8080"},
+                    "memory_limit": {"source_path": "defaults.memory_limit.value", "target_key": "memory_limit", "fallback": "2GB"},
+                    "database_setup": {"source_path": "defaults.database_setup.value", "target_key": "database_setup", "fallback": "container"},
+                    "ssl_configuration": {"source_path": "defaults.ssl_configuration.value", "target_key": "ssl_configuration", "fallback": "Self-signed certificate"}
+                },
+                "output_format": {
+                    "header_comments": ["# Configuration defaults for TUI layout", "# Generated from discovery output via defaults mapping"]
+                }
+            }
+        
+        with open(mapping_path, 'r') as f:
+            return json.load(f)
+    
+    def _apply_field_mapping(self, enhanced_defaults: Dict[str, Any], mapping_config: Dict[str, Any]) -> Dict[str, str]:
+        """Apply field mapping configuration to transform enhanced defaults."""
+        field_mappings = mapping_config.get("field_mappings", {})
+        result = {}
+        
+        for field_name, mapping in field_mappings.items():
+            source_path = mapping.get("source_path", "")
+            target_key = mapping.get("target_key", field_name)
+            fallback = mapping.get("fallback", "")
+            
+            # Navigate source path (e.g., "defaults.domain.value")
+            value = enhanced_defaults
+            try:
+                for key in source_path.split('.'):
+                    value = value[key]
+                result[target_key] = str(value)
+            except (KeyError, TypeError):
+                logger.warning(f"Could not find {source_path} in enhanced defaults, using fallback: {fallback}")
+                result[target_key] = fallback
+        
+        return result
+    
     def _write_tui_defaults_file(self, enhanced_defaults: Dict[str, Any]) -> str:
-        """Write TUI-compatible defaults file."""
-        import yaml
+        """Write TUI-compatible defaults file using mapping configuration."""
+        # Load mapping configuration
+        mapping_config = self._load_defaults_mapping()
         
-        # Flatten enhanced defaults for TUI consumption
-        flattened_defaults = self._flatten_enhanced_defaults(enhanced_defaults)
+        # Apply field mappings
+        tui_defaults = self._apply_field_mapping(enhanced_defaults, mapping_config)
         
-        # Create TUI defaults structure
-        tui_structure = {
-            '# Configuration defaults for TUI layout': None,
-            '# Generated from enhanced discovery defaults': None,
-            'defaults': flattened_defaults
-        }
+        # Get output format configuration
+        output_format = mapping_config.get("output_format", {})
+        header_comments = output_format.get("header_comments", [
+            "# Configuration defaults for TUI layout",
+            "# Generated from discovery output via defaults mapping"
+        ])
         
         # Write to TUI defaults location
         tui_path = self.project_root / "src" / "openproject_config_manager" / "collector" / "layouts" / "defaults" / "config_tui.defaults.yml"
         tui_path.parent.mkdir(parents=True, exist_ok=True)
         
         with open(tui_path, 'w') as f:
-            # Write header comments manually for cleaner format
-            f.write("# Configuration defaults for TUI layout\n")
-            f.write("# Generated from enhanced discovery defaults\n\n")
+            # Write header comments
+            for comment in header_comments:
+                f.write(f"{comment}\n")
+            f.write("\n")
+            
+            # Write defaults section
             f.write("defaults:\n")
-            for key, value in flattened_defaults.items():
+            for key, value in tui_defaults.items():
                 f.write(f"  {key}: \"{value}\"\n")
         
         return str(tui_path)
