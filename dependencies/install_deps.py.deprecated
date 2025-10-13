@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+"""
+DEPRECATED: This script has been migrated to the centralized dependency-manager
+
+New location: /opt/openproject/external/dependency-manager
+New command: dependency-manager install
+
+Please use the new centralized system:
+    cd /opt/openproject/external/dependency-manager
+    python3 -m dependency_manager.cli install
+
+This script will be removed in a future version.
+"""
+
+import sys
+
+print("⚠️  DEPRECATED: This script has been replaced by the centralized dependency-manager")
+print("📍 New location: /opt/openproject/external/dependency-manager") 
+print("🚀 New command: dependency-manager install")
+print("")
+print("Please update your workflows to use the new system.")
+print("See README.md in dependency-manager for migration guide.")
+sys.exit(1)
