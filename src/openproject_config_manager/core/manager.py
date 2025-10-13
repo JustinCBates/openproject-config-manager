@@ -127,6 +127,12 @@ class ConfigurationManager:
             else:
                 self.ui.show_info("No existing configuration files found")
             
+            # Generate and write enhanced defaults file
+            self.ui.show_step("Generating enhanced defaults...")
+            enhanced_defaults = self._generate_enhanced_defaults()
+            enhanced_defaults_path = self._write_enhanced_defaults_file(enhanced_defaults)
+            self.ui.show_success(f"Enhanced defaults written to: {enhanced_defaults_path}")
+            
             self.discovered_data = discovered
             logger.info("Discovery phase completed successfully")
             
@@ -135,6 +141,44 @@ class ConfigurationManager:
         except Exception as e:
             logger.error(f"Discovery phase failed: {e}")
             self.ui.show_error(f"Discovery failed: {e}")
+            raise
+    
+    def run_tui_mapping_phase(self, enhanced_defaults_path: Optional[str] = None) -> str:
+        """
+        Phase 1.5: TUI Defaults Mapping
+        Transform rich enhanced defaults to simple TUI format.
+        
+        Args:
+            enhanced_defaults_path: Path to enhanced defaults file (optional)
+            
+        Returns:
+            Path to the generated TUI defaults file
+        """
+        self.ui.show_phase_header("TUI Mapping Phase", "Transforming defaults for TUI consumption...")
+        
+        try:
+            # Load enhanced defaults file
+            if not enhanced_defaults_path:
+                enhanced_defaults_path = self.project_root / "output" / "discovery" / "enhanced_defaults.yml"
+            
+            if not Path(enhanced_defaults_path).exists():
+                raise ValueError(f"Enhanced defaults file not found: {enhanced_defaults_path}")
+            
+            self.ui.show_step(f"Loading enhanced defaults from {enhanced_defaults_path}...")
+            enhanced_defaults = self._load_enhanced_defaults_file(enhanced_defaults_path)
+            
+            # Transform to TUI format
+            self.ui.show_step("Transforming to TUI-compatible format...")
+            tui_defaults_path = self._write_tui_defaults_file(enhanced_defaults)
+            
+            self.ui.show_success(f"TUI defaults written to: {tui_defaults_path}")
+            logger.info("TUI mapping phase completed successfully")
+            
+            return str(tui_defaults_path)
+            
+        except Exception as e:
+            logger.error(f"TUI mapping phase failed: {e}")
+            self.ui.show_error(f"TUI mapping failed: {e}")
             raise
     
     def run_interactive_collection_phase(self) -> Configuration:
@@ -155,11 +199,15 @@ class ConfigurationManager:
             # Generate enhanced defaults from discovery data
             enhanced_defaults = self._generate_enhanced_defaults()
             
+            # Flatten enhanced defaults for TUI consumption
+            flattened_defaults = self._flatten_enhanced_defaults(enhanced_defaults)
+            
             # Prepare variables for flow engine
             flow_variables = {
                 'discovered_data': self.discovered_data,
                 'initial_config': initial_data,
-                'enhanced_defaults': enhanced_defaults,
+                'enhanced_defaults': enhanced_defaults,  # Rich structure for debugging/future use
+                'defaults': flattened_defaults,  # Simple structure for TUI consumption
                 'system_data': self.discovered_data.get('system', {}),
                 'docker_data': self.discovered_data.get('docker', {}),
                 'env_data': self.discovered_data.get('environment', {}),
@@ -280,6 +328,9 @@ class ConfigurationManager:
         try:
             # Phase 1: Discovery
             self.run_discovery_phase()
+            
+            # Phase 1.5: TUI Mapping
+            self.run_tui_mapping_phase()
             
             # Phase 2: Interactive Collection
             self.run_interactive_collection_phase()
@@ -429,6 +480,21 @@ class ConfigurationManager:
                     "password": "changeme"  # Default password
                 }
             )
+    
+    def _flatten_enhanced_defaults(self, enhanced_defaults: Dict[str, Any]) -> Dict[str, Any]:
+        """Flatten enhanced defaults structure for TUI consumption."""
+        flattened = {}
+        
+        defaults_section = enhanced_defaults.get('defaults', {})
+        for key, value_dict in defaults_section.items():
+            if isinstance(value_dict, dict) and 'value' in value_dict:
+                # Extract just the value for TUI consumption
+                flattened[key] = value_dict['value']
+            else:
+                # Pass through simple values
+                flattened[key] = value_dict
+        
+        return flattened
     
     def _generate_enhanced_defaults(self) -> Dict[str, Any]:
         """Generate enhanced defaults structure from discovery data for TUI flow engine."""
@@ -643,6 +709,56 @@ class ConfigurationManager:
             'probe_source': 'network.ssl_analysis',
             'confidence': confidence
         }
+    
+    def _write_enhanced_defaults_file(self, enhanced_defaults: Dict[str, Any]) -> str:
+        """Write enhanced defaults to persistent file."""
+        import yaml
+        
+        # Create output directory
+        output_dir = self.project_root / "output" / "discovery"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Write enhanced defaults file
+        enhanced_path = output_dir / "enhanced_defaults.yml"
+        with open(enhanced_path, 'w') as f:
+            yaml.dump(enhanced_defaults, f, default_flow_style=False, sort_keys=False)
+        
+        return str(enhanced_path)
+    
+    def _load_enhanced_defaults_file(self, file_path: str) -> Dict[str, Any]:
+        """Load enhanced defaults from file."""
+        import yaml
+        
+        with open(file_path, 'r') as f:
+            return yaml.safe_load(f)
+    
+    def _write_tui_defaults_file(self, enhanced_defaults: Dict[str, Any]) -> str:
+        """Write TUI-compatible defaults file."""
+        import yaml
+        
+        # Flatten enhanced defaults for TUI consumption
+        flattened_defaults = self._flatten_enhanced_defaults(enhanced_defaults)
+        
+        # Create TUI defaults structure
+        tui_structure = {
+            '# Configuration defaults for TUI layout': None,
+            '# Generated from enhanced discovery defaults': None,
+            'defaults': flattened_defaults
+        }
+        
+        # Write to TUI defaults location
+        tui_path = self.project_root / "src" / "openproject_config_manager" / "collector" / "layouts" / "defaults" / "config_tui.defaults.yml"
+        tui_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        with open(tui_path, 'w') as f:
+            # Write header comments manually for cleaner format
+            f.write("# Configuration defaults for TUI layout\n")
+            f.write("# Generated from enhanced discovery defaults\n\n")
+            f.write("defaults:\n")
+            for key, value in flattened_defaults.items():
+                f.write(f"  {key}: \"{value}\"\n")
+        
+        return str(tui_path)
     
     def _show_configuration_summary(self, configuration: Configuration):
         """Show a summary of the collected configuration."""

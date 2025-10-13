@@ -14,7 +14,7 @@ metadata:
   description: "Modular configuration layout for improved maintainability"
 
 # Global configuration settings
-defaults_file: defaults/config_TUI.defaults.yml
+defaults_file: defaults/config_tui.defaults.yml
 
 steps:
   # Welcome and Project Basics

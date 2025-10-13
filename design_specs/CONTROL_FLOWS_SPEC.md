@@ -26,15 +26,22 @@ main_config_flow:
       status: IMPLEMENTED
       description: "Discover system environment and generate intelligent defaults"
       sub_flows: ["discovery_flow"]
-      artifacts_produced: ["discovery_data", "enhanced_defaults"]
+      artifacts_produced: ["discovery_data", "enhanced_defaults_file"]
       artifacts_consumed: []
+      
+    - phase_id: "tui_mapping"
+      name: "TUI Defaults Mapping"
+      status: IMPLEMENTED
+      description: "Transform rich enhanced defaults to simple TUI format"
+      artifacts_produced: ["tui_defaults_file"]
+      artifacts_consumed: ["enhanced_defaults_file"]
       
     - phase_id: "collection"
       name: "Interactive Collection"
       status: IMPLEMENTED
       description: "Collect user configuration via interactive UI"
       artifacts_produced: ["user_configuration"]
-      artifacts_consumed: ["enhanced_defaults"]
+      artifacts_consumed: ["tui_defaults_file"]
       
     - phase_id: "validation"
       name: "Validation Phase"
@@ -99,7 +106,7 @@ discovery_flow:
       name: "Enhanced Defaults Generation"
       status: IMPLEMENTED
       description: "Generate intelligent defaults from discovery data"
-      artifacts_produced: ["enhanced_defaults"]
+      artifacts_produced: ["enhanced_defaults_file"]
       artifacts_consumed: ["environment_data", "system_data", "docker_data", "network_data"]
 ```
 
@@ -117,14 +124,25 @@ discovery_data:
   implementation_status: "implemented"
   storage_type: "in-memory"
 
-enhanced_defaults:
-  description: "Intelligent defaults based on discovery findings"
-  format: "Rich YAML structure with metadata and probe-sourced defaults"
+enhanced_defaults_file:
+  description: "Rich discovery-based defaults with metadata and reasoning"
+  format: "YAML file with probe sources, confidence levels, and system analysis"
   producers: ["run_discovery_phase"]
+  consumers: ["tui_mapping_phase"]
+  lifecycle: "persistent"
+  concrete_product: "output/discovery/enhanced_defaults.yml"
+  implementation_status: "planned"
+  storage_type: "file"
+
+tui_defaults_file:
+  description: "Flattened defaults for TUI form engine consumption"
+  format: "Simple YAML structure matching TUI field expectations"
+  producers: ["tui_mapping_phase"]
   consumers: ["run_interactive_collection_phase"]
-  lifecycle: "session_scoped"
-  implementation_status: "implemented"
-  storage_type: "in-memory"
+  lifecycle: "persistent"
+  concrete_product: "src/openproject_config_manager/collector/layouts/defaults/config_tui.defaults.yml"
+  implementation_status: "planned"
+  storage_type: "file"
   
 user_configuration:
   description: "User-provided configuration values"
