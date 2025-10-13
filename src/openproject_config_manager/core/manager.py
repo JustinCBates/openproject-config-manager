@@ -16,6 +16,7 @@ from ..core.config import Configuration
 from ..discovery.environment import EnvironmentDiscovery
 from ..discovery.system import SystemDiscovery
 from ..discovery.docker import DockerDiscovery
+from ..discovery.network import NetworkDiscovery
 # from ..collector.interactive import InteractiveCollector  # Temporarily disabled during migration
 from ..validation.validator import ConfigurationValidator
 from ..export.cfg_writer import CfgWriter
@@ -58,6 +59,7 @@ class ConfigurationManager:
         self.env_discovery = EnvironmentDiscovery()
         self.system_discovery = SystemDiscovery()
         self.docker_discovery = DockerDiscovery()
+        self.network_discovery = NetworkDiscovery()
         
         # Initialize flow engine with layouts directory
         flows_dir = Path(__file__).parent.parent / "collector" / "layouts"
@@ -101,6 +103,20 @@ class ConfigurationManager:
             docker_data = self.docker_discovery.discover()
             discovered['docker'] = docker_data
             self.ui.show_success("Docker scan complete")
+            
+            # Network discovery
+            self.ui.show_step("Analyzing network topology and conflicts...")
+            network_data = self.network_discovery.discover()
+            discovered['network'] = network_data
+            conflicts = network_data.get('conflicts', [])
+            if conflicts:
+                high_severity = len([c for c in conflicts if c.get('severity') == 'high'])
+                if high_severity > 0:
+                    self.ui.show_warning(f"Found {high_severity} high-severity network conflicts")
+                else:
+                    self.ui.show_info(f"Found {len(conflicts)} network conflicts")
+            else:
+                self.ui.show_success("No network conflicts detected")
             
             # Look for existing configuration files
             self.ui.show_step("Scanning for existing configuration files...")

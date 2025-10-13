@@ -85,7 +85,7 @@ discovery_flow:
     - insert_after: "docker_discovery"
       step_id: "network_discovery"
       name: "Network Discovery"
-      status: TODO
+      status: IMPLEMENTED
       description: "Discover network topology and conflicts"
 ```
 
