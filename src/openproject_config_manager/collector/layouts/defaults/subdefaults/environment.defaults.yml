@@ -1,0 +1,11 @@
+# Environment defaults
+defaults:
+  # Environment selection
+  environment: "production"
+  
+  # Environment-specific settings
+  debug_enabled: false
+  log_level: "info"
+  
+  # UI styling
+  select_style: "pointer"

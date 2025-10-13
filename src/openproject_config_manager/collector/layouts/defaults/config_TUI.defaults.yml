@@ -1,0 +1,40 @@
+# OpenProject TUI Defaults
+# Intelligent defaults for OpenProject configuration
+
+metadata:
+  layout_file: "config_tui_with_defaults.layout.yml"
+  generated_at: "2025-10-12T15:45:00Z"
+
+# Default values for UI components
+defaults:
+  domain_name:
+    value: "openproject.local"
+    reason: "Local development domain"
+    
+  memory_limit:
+    value: "4GB (Medium teams, 20-100 users)"
+    reason: "Balanced memory allocation for most deployments"
+    
+  worker_processes:
+    value: "4 (Medium usage)"
+    reason: "Optimal worker count for medium workloads"
+    
+  database_setup:
+    value: "container"
+    reason: "Containerized database setup recommended"
+    
+  ssl_configuration:
+    value: "Generate Let's Encrypt certificate (Recommended)"
+    reason: "SSL recommended for security"
+    
+  environment_type:
+    value: "Development (Local testing)"
+    reason: "Safe default for initial setup"
+    
+  project_name:
+    value: "openproject"
+    reason: "Standard project name"
+    
+  database_type:
+    value: "postgresql"
+    reason: "PostgreSQL recommended for production"
