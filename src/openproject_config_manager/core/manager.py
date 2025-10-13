@@ -517,21 +517,33 @@ class ConfigurationManager:
     
     def _generate_domain_default(self, network_data: Dict[str, Any], system_data: Dict[str, Any]) -> Dict[str, Any]:
         """Generate intelligent domain default."""
-        hostname = network_data.get('basic_info', {}).get('hostname')
-        if not hostname:
-            hostname = system_data.get('platform', {}).get('hostname')
+        basic_info = network_data.get('basic_info', {})
+        fqdn = basic_info.get('fqdn')
+        domain = basic_info.get('domain')
+        hostname = basic_info.get('hostname')
         
-        if hostname and hostname != 'localhost':
-            domain = f"{hostname}.local"
-            reason = f"Using detected hostname '{hostname}' with .local suffix"
+        # Prefer FQDN if available and it's not localhost
+        if fqdn and fqdn != 'localhost' and '.' in fqdn and not fqdn.endswith('.local'):
+            domain_value = fqdn
+            reason = f"Using detected FQDN '{fqdn}' from network configuration"
             confidence = "high"
-        else:
-            domain = "openproject.local"
-            reason = "No reliable hostname detected, using default local domain"
+        # Fall back to hostname + detected domain
+        elif hostname and domain and hostname != 'localhost':
+            domain_value = f"{hostname}.{domain}"
+            reason = f"Using detected hostname '{hostname}' with domain '{domain}'"
+            confidence = "high"
+        # Fall back to hostname + .local for local development
+        elif hostname and hostname != 'localhost':
+            domain_value = f"{hostname}.local"
+            reason = f"Using detected hostname '{hostname}' with .local suffix for local development"
             confidence = "medium"
+        else:
+            domain_value = "openproject.local"
+            reason = "No reliable hostname detected, using default local domain"
+            confidence = "low"
         
         return {
-            'value': domain,
+            'value': domain_value,
             'reason': reason,
             'probe_source': 'network.hostname_detection',
             'confidence': confidence
