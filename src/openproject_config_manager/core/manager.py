@@ -152,10 +152,14 @@ class ConfigurationManager:
             initial_config = self._create_initial_config()
             initial_data = initial_config.dict() if initial_config else {}
             
+            # Generate enhanced defaults from discovery data
+            enhanced_defaults = self._generate_enhanced_defaults()
+            
             # Prepare variables for flow engine
             flow_variables = {
                 'discovered_data': self.discovered_data,
                 'initial_config': initial_data,
+                'enhanced_defaults': enhanced_defaults,
                 'system_data': self.discovered_data.get('system', {}),
                 'docker_data': self.discovered_data.get('docker', {}),
                 'env_data': self.discovered_data.get('environment', {}),
@@ -425,6 +429,208 @@ class ConfigurationManager:
                     "password": "changeme"  # Default password
                 }
             )
+    
+    def _generate_enhanced_defaults(self) -> Dict[str, Any]:
+        """Generate enhanced defaults structure from discovery data for TUI flow engine."""
+        from datetime import datetime
+        
+        # Extract discovery data
+        system_data = self.discovered_data.get('system', {})
+        network_data = self.discovered_data.get('network', {})
+        docker_data = self.discovered_data.get('docker', {})
+        env_data = self.discovered_data.get('environment', {})
+        
+        # Build metadata section
+        metadata = {
+            'generated_at': datetime.now().isoformat(),
+            'probe_version': '1.0.0',
+            'layout_file': 'config_tui.layout.yml',
+            'system_info': self._extract_system_metadata(system_data),
+            'network_info': self._extract_network_metadata(network_data),
+            'services_info': self._extract_services_metadata(docker_data, env_data),
+            'storage_info': self._extract_storage_metadata(system_data)
+        }
+        
+        # Build intelligent defaults section
+        defaults = {
+            'domain': self._generate_domain_default(network_data, system_data),
+            'port': self._generate_port_default(network_data),
+            'memory_limit': self._generate_memory_default(system_data),
+            'database_setup': self._generate_database_default(docker_data),
+            'ssl_configuration': self._generate_ssl_default(network_data),
+        }
+        
+        return {
+            'metadata': metadata,
+            'defaults': defaults
+        }
+    
+    def _extract_system_metadata(self, system_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Extract system metadata for enhanced defaults."""
+        platform_info = system_data.get('platform', {})
+        hardware_info = system_data.get('hardware', {})
+        
+        return {
+            'os': platform_info.get('system', 'Unknown'),
+            'arch': platform_info.get('machine', 'Unknown'),
+            'hostname': platform_info.get('hostname', 'unknown'),
+            'memory_total_gb': hardware_info.get('memory', {}).get('total_gb', 0),
+            'memory_available_gb': hardware_info.get('memory', {}).get('available_gb', 0),
+            'cpu_cores': hardware_info.get('cpu', {}).get('cores', 0),
+            'cpu_model': hardware_info.get('cpu', {}).get('model', 'Unknown')
+        }
+    
+    def _extract_network_metadata(self, network_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Extract network metadata for enhanced defaults."""
+        basic_info = network_data.get('basic_info', {})
+        port_analysis = network_data.get('port_analysis', {})
+        
+        return {
+            'hostname': basic_info.get('hostname', 'unknown'),
+            'interfaces': [iface.get('name', 'unknown') for iface in network_data.get('interfaces', [])],
+            'available_ports': port_analysis.get('available_ports', []),
+            'recommended_ports': port_analysis.get('recommended_ports', {}),
+            'conflicts': len(network_data.get('conflicts', []))
+        }
+    
+    def _extract_services_metadata(self, docker_data: Dict[str, Any], env_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Extract services metadata for enhanced defaults."""
+        containers = docker_data.get('containers', [])
+        
+        return {
+            'docker_available': docker_data.get('docker_available', False),
+            'existing_containers': [c.get('name', 'unknown') for c in containers],
+            'database_containers': len(docker_data.get('database_containers', [])),
+            'postgresql_detected': any('postgres' in c.get('image', '').lower() for c in containers),
+            'mysql_detected': any('mysql' in c.get('image', '').lower() for c in containers)
+        }
+    
+    def _extract_storage_metadata(self, system_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Extract storage metadata for enhanced defaults."""
+        storage_info = system_data.get('storage', {})
+        
+        return {
+            'total_space_gb': storage_info.get('total_gb', 0),
+            'available_space_gb': storage_info.get('free_gb', 0),
+            'recommended_data_path': '/opt/openproject/data'
+        }
+    
+    def _generate_domain_default(self, network_data: Dict[str, Any], system_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Generate intelligent domain default."""
+        hostname = network_data.get('basic_info', {}).get('hostname')
+        if not hostname:
+            hostname = system_data.get('platform', {}).get('hostname')
+        
+        if hostname and hostname != 'localhost':
+            domain = f"{hostname}.local"
+            reason = f"Using detected hostname '{hostname}' with .local suffix"
+            confidence = "high"
+        else:
+            domain = "openproject.local"
+            reason = "No reliable hostname detected, using default local domain"
+            confidence = "medium"
+        
+        return {
+            'value': domain,
+            'reason': reason,
+            'probe_source': 'network.hostname_detection',
+            'confidence': confidence
+        }
+    
+    def _generate_port_default(self, network_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Generate intelligent port default."""
+        recommended_ports = network_data.get('port_analysis', {}).get('recommended_ports', {})
+        conflicts = network_data.get('conflicts', [])
+        
+        if 'web' in recommended_ports:
+            port = str(recommended_ports['web'])
+            reason = f"Port {port} is available and recommended by network analysis"
+            confidence = "high"
+        elif any(c.get('port') == 80 for c in conflicts):
+            port = "8080"
+            reason = "Port 80 is in use, using alternative port 8080"
+            confidence = "medium"
+        else:
+            port = "80"
+            reason = "Standard HTTP port 80 appears available"
+            confidence = "medium"
+        
+        return {
+            'value': port,
+            'reason': reason,
+            'probe_source': 'network.port_availability',
+            'confidence': confidence
+        }
+    
+    def _generate_memory_default(self, system_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Generate intelligent memory allocation default."""
+        total_gb = system_data.get('hardware', {}).get('memory', {}).get('total_gb', 0)
+        
+        if total_gb >= 16:
+            memory = "4GB"
+            reason = f"Detected {total_gb:.1f}GB system RAM, recommending 25% allocation (4GB)"
+            confidence = "high"
+        elif total_gb >= 8:
+            memory = "2GB"
+            reason = f"Detected {total_gb:.1f}GB system RAM, recommending 25% allocation (2GB)"
+            confidence = "high"
+        elif total_gb >= 4:
+            memory = "1GB"
+            reason = f"Detected {total_gb:.1f}GB system RAM, recommending conservative allocation (1GB)"
+            confidence = "medium"
+        else:
+            memory = "2GB"
+            reason = "Could not detect system memory, using moderate default (2GB)"
+            confidence = "low"
+        
+        return {
+            'value': memory,
+            'reason': reason,
+            'probe_source': 'system.memory_analysis',
+            'confidence': confidence
+        }
+    
+    def _generate_database_default(self, docker_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Generate intelligent database setup default."""
+        database_containers = docker_data.get('database_containers', [])
+        
+        if database_containers:
+            container_name = database_containers[0].get('name', 'existing-db')
+            value = "existing"
+            reason = f"Found existing database container '{container_name}', recommending reuse"
+            confidence = "high"
+        else:
+            value = "container"
+            reason = "No existing database detected, recommending containerized PostgreSQL"
+            confidence = "high"
+        
+        return {
+            'value': value,
+            'reason': reason,
+            'probe_source': 'docker.container_scan',
+            'confidence': confidence
+        }
+    
+    def _generate_ssl_default(self, network_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Generate intelligent SSL configuration default."""
+        security_info = network_data.get('security', {})
+        has_public_ip = network_data.get('basic_info', {}).get('public_ip') is not None
+        
+        if has_public_ip:
+            value = "Generate Let's Encrypt certificate"
+            reason = "Public IP detected, SSL certificate recommended for security"
+            confidence = "high"
+        else:
+            value = "Self-signed certificate"
+            reason = "Local deployment detected, self-signed certificate sufficient"
+            confidence = "medium"
+        
+        return {
+            'value': value,
+            'reason': reason,
+            'probe_source': 'network.ssl_analysis',
+            'confidence': confidence
+        }
     
     def _show_configuration_summary(self, configuration: Configuration):
         """Show a summary of the collected configuration."""

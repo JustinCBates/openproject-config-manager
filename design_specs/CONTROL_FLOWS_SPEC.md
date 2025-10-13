@@ -119,7 +119,7 @@ discovery_data:
 
 enhanced_defaults:
   description: "Intelligent defaults based on discovery findings"
-  format: "Generated in _create_initial_config() method"
+  format: "Rich YAML structure with metadata and probe-sourced defaults"
   producers: ["run_discovery_phase"]
   consumers: ["run_interactive_collection_phase"]
   lifecycle: "session_scoped"
