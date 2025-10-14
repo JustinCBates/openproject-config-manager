@@ -7,7 +7,7 @@ from pathlib import Path
 from datetime import datetime
 import shutil
 
-from ..core.config import Configuration
+from src.openproject_config_manager.core.config import Configuration
 
 
 logger = logging.getLogger(__name__)

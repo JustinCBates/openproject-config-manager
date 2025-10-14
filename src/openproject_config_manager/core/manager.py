@@ -23,7 +23,7 @@ from ..export.cfg_writer import CfgWriter
 from ..ui.questionary_ui import QuestionaryUI
 
 # Import the TUI Form Engine (external package)
-from tui_form_engine.core.flow_engine import FlowEngine
+from tui_form_engine.core.flow_engine import FormExecutor
 
 
 logger = logging.getLogger(__name__)
@@ -63,7 +63,7 @@ class ConfigurationManager:
         
         # Initialize flow engine with layouts directory
         flows_dir = Path(__file__).parent.parent / "collector" / "layouts"
-        self.flow_engine = FlowEngine(flows_dir=str(flows_dir))
+        self.flow_engine = FormExecutor(flows_dir=str(flows_dir))
         
         # Note: Legacy InteractiveCollector removed during Questionary migration
         self.validator = ConfigurationValidator()
