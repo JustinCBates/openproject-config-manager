@@ -1,0 +1,20 @@
+flow_id: discovery_prompt
+title: "Discovery Configuration Prompt"
+icon: "🔧"
+description: "Ask user whether to use automatic system discovery or manual configuration"
+
+metadata:
+  id: discovery_prompt
+  version: "1.0.0"
+  estimated_time: "30 seconds"
+
+# TODO: Add defaults_file if needed
+# defaults_file: discovery_prompt.defaults.yml
+
+steps:
+  # TODO: Define form steps
+  - id: example_input
+    type: text
+    message: "Enter a value:"
+    instruction: "Provide configuration input"
+    default: ""

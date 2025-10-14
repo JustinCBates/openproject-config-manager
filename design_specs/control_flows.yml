@@ -1,18 +1,3 @@
-component:
-  name: config-manager
-  description: OpenProject configuration management component
-  version: 1.0.0
-  entry_script: run_phases.py
-  entry_script_location: Repository root
-  usage: python3 run_phases.py --start 1 --end 5
-  main_orchestrator:
-    file: phases/phases_orchestrator.py
-    class: PhasesOrchestrator
-    description: Main orchestrator coordinating all 5 phases
-    methods:
-    - execute_all_phases(context) -> Dict[str, Any]
-    - execute_phase(phase_number, context) -> Dict[str, Any]
-    - execute_phases_range(start, end, context) -> Dict[str, Any]
 entry_points:
   cli:
     status: IMPLEMENTED
@@ -79,12 +64,22 @@ flows:
           transformation: DefaultsGenerator.generate_enhanced_defaults()
       data_flow:
         input: []
-        processing: "System probing \u2192 in-memory dict \u2192 YAML serialization"
+        processing: System probing → in-memory dict → YAML serialization
         output_memory:
         - discovery_data
         output_file:
         - enhanced_defaults_file
       sequence: 1
+      steps:
+      - step_id: discovery_prompt
+        name: Discovery Configuration Prompt
+        type: interactive
+        description: Ask user whether to use automatic system discovery or manual
+          configuration
+        status: PLANNED
+        dependencies: []
+        artifacts_produced:
+        - discovery_config
     - phase_id: tui_mapping
       name: TUI Defaults Mapping
       status: IMPLEMENTED
@@ -108,7 +103,7 @@ flows:
         - artifact: defaults_mapping_config
           type: REFERENCE_DATA
           location: src/openproject_config_manager/core/defaults_map.json
-          purpose: "Defines field mappings from enhanced \u2192 TUI format"
+          purpose: Defines field mappings from enhanced → TUI format
         side_effects:
         - action: reads
           artifact: enhanced_defaults_file
@@ -126,8 +121,8 @@ flows:
         input_file:
         - enhanced_defaults_file
         - defaults_mapping_config
-        processing: "Load YAML files \u2192 apply field mapping \u2192 flatten {value}\
-          \ fields \u2192 write simple YAML"
+        processing: Load YAML files → apply field mapping → flatten {value} fields
+          → write simple YAML
         output_file:
         - tui_defaults_file
       sequence: 2
@@ -274,150 +269,6 @@ flows:
       status: IMPLEMENTED
       description: Load TUI layout and defaults, render interactive form, collect
         user input, save configuration
-artifacts:
-  discovery_data:
-    description: Raw discovery data from environment scanning
-    format: JSON
-    state: IN_MEMORY
-    persistence: TRANSIENT
-    location: Python dict returned from run_discovery_phase()
-    produced_by: discovery phase
-    consumed_by: []
-    note: Transformed to enhanced_defaults_file via YAML serialization
-  enhanced_defaults_file:
-    description: Rich defaults with discovery data and recommendations
-    format: YAML
-    state: FILE
-    persistence: PERSISTENT
-    location: output/discovery/discovery_output.yml
-    source_artifact: discovery_data
-    transformation: dict_to_yaml_with_metadata
-    produced_by: discovery phase
-    consumed_by:
-    - tui_mapping phase
-    structure:
-      metadata:
-        description: System probe information
-        fields:
-        - generated_at
-        - probe_version
-        - layout_file
-        - system_info
-        - network_info
-        - services_info
-        - storage_info
-      defaults:
-        description: Intelligent defaults with discovery data
-        fields:
-        - domain
-        - port
-        - memory_limit
-        - database_setup
-        - ssl_configuration
-        format: Each field has {value, source, confidence, reason} structure
-  defaults_mapping_config:
-    description: "Field mapping rules for enhanced \u2192 TUI transformation"
-    format: YAML
-    state: FILE
-    persistence: STATIC
-    role: REFERENCE_DATA
-    location: outputs/mapping/field_mapping_config.yml
-    used_by:
-    - tui_mapping phase
-    note: Maps enhanced defaults fields to TUI defaults keys with source paths (currently
-      mocked, will be externalized)
-    structure:
-      field_mappings:
-        description: Mapping rules for each field
-        example: "\"domain\": {\n  \"source_path\": \"defaults.domain.value\",\n \
-          \ \"target_key\": \"domain\",\n  \"fallback\": \"localhost\"\n}\n"
-      output_format:
-        description: Output file formatting rules
-        fields:
-        - header_comments
-  tui_defaults_file:
-    description: Simplified defaults for TUI display
-    format: YAML
-    state: FILE
-    persistence: PERSISTENT
-    location: outputs/tui/tui_defaults.yml
-    final_location: src/openproject_config_manager/collector/layouts/defaults/config_tui.defaults.yml
-    source_artifact: enhanced_defaults_file
-    transformation: field_mapping_with_flattening
-    produced_by: tui_mapping phase
-    consumed_by:
-    - collection phase
-    note: Generated in phase outputs, then copied to final_location for TUI consumption
-    structure:
-      defaults:
-        description: Flat key-value pairs for TUI consumption
-        format: Simple string values extracted from enhanced defaults {value} field
-  user_configuration:
-    description: Configuration collected from user via TUI
-    format: YAML
-    state: FILE
-    persistence: PERSISTENT
-    location: output/collected_configuration.yml
-    produced_by: collection phase
-    consumed_by:
-    - validation phase
-  validated_configuration:
-    description: User configuration after validation
-    format: YAML
-    state: IN_MEMORY
-    persistence: TRANSIENT
-    produced_by: validation phase
-    consumed_by:
-    - export phase
-  validation_report:
-    description: Validation results and any issues found
-    format: JSON
-    state: IN_MEMORY
-    persistence: TRANSIENT
-    produced_by: validation phase
-    consumed_by: []
-  final_configuration_files:
-    description: Final exported configuration files
-    format: Multiple (docker-compose.yml, .env, etc.)
-    state: FILE
-    persistence: PERSISTENT
-    location: output/exported/
-    produced_by: export phase
-    consumed_by: []
-transformations:
-  discovery_to_enhanced_file:
-    name: Discovery Data to Enhanced Defaults File
-    from: discovery_data
-    to: enhanced_defaults_file
-    method: "_generate_enhanced_defaults() \u2192 _write_enhanced_defaults_file()"
-    location: ConfigurationManager class
-    logic: '1. Extract system, network, docker, environment data from discovery_data
-
-      2. Build metadata section with probe info and system details
-
-      3. Generate intelligent defaults with {value, source, confidence, reason} structure
-
-      4. Serialize to YAML file at output/discovery/discovery_output.yml
-
-      '
-    input_state: IN_MEMORY
-    output_state: FILE
-  enhanced_file_to_tui_file:
-    name: Enhanced Defaults to TUI Defaults
-    from: enhanced_defaults_file
-    to: tui_defaults_file
-    method: "_load_enhanced_defaults_file() \u2192 _apply_field_mapping() \u2192 _write_tui_defaults_file()"
-    uses_reference:
-    - defaults_mapping_config
-    location: ConfigurationManager class
-    logic: "1. Load enhanced defaults YAML from file\n2. Load field mapping rules\
-      \ (hardcoded config)\n3. For each mapping rule:\n   - Extract value from source_path\
-      \ (e.g., \"defaults.domain.value\")\n   - Map to target_key with fallback if\
-      \ missing\n4. Flatten to simple key: \"value\" pairs\n5. Write to TUI defaults\
-      \ file with header comments\n"
-    input_state: FILE
-    output_state: FILE
-    transformation_type: FIELD_MAPPING_WITH_FLATTENING
 decision_points:
   continue_on_validation_failure:
     description: Whether to continue if validation finds non-critical issues
@@ -433,7 +284,3 @@ decision_points:
     - refresh
     - merge
     default: merge
-implementation_status:
-  overall: IMPLEMENTED
-  last_updated: '2025-10-13'
-  notes: Core configuration flow fully implemented and tested
