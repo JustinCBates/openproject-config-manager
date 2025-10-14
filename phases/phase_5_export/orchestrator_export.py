@@ -11,10 +11,33 @@ import logging
 import yaml
 import sys
 
-# Conditional imports - no step modules to import for this phase
+# === GENERATED: STEP_IMPORTS - DO NOT EDIT ===
+# Handle both relative imports (when called by parent) and absolute imports (when run standalone)
 if __name__ == '__main__':
-    # When running as standalone script, add parent to path
+    # Running standalone - use absolute imports
     sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+    from phases.phase_5_export.step_1_export_docker_compose.export_docker_compose import ExportDockerComposeStep
+    from phases.phase_5_export.step_2_export_env_file.export_env_file import ExportEnvFileStep
+    from phases.phase_5_export.step_3_export_manifest.export_manifest import ExportManifestStep
+else:
+    # When imported as module, use relative imports
+    from .step_1_export_docker_compose.export_docker_compose import ExportDockerComposeStep
+    from .step_2_export_env_file.export_env_file import ExportEnvFileStep
+    from .step_3_export_manifest.export_manifest import ExportManifestStep
+# === END GENERATED: STEP_IMPORTS ===
+
+# Infrastructure imports (preserved, not regenerated)
+# Add phase-specific infrastructure imports here:
+# - PathResolver for artifact resolution
+# - Custom utilities or helpers
+# - External dependencies
+#
+# Example:
+# try:
+#     from control_flow_engine.runtime import PathResolver, PathResolutionError
+# except ImportError:
+#     PathResolver = None
+#     PathResolutionError = Exception
 
 logger = logging.getLogger(__name__)
 
@@ -24,12 +47,10 @@ class ExportPhase:
     Export Phase
     Status: IMPLEMENTED
     
-    Export final configuration files for deploy-manager consumption
+    Export final configuration files for deployment
     
     Artifacts Consumed: validated_configuration
-    Artifacts Produced: final_configuration_files (docker-compose.yml, .env, manifest)
-    
-    Note: Outputs to phases/outputs/ directory for deploy-manager
+    Artifacts Produced: docker_compose_file, env_file, manifest_file
     """
     
     def __init__(self, project_root: Path, ui=None):
@@ -47,10 +68,7 @@ class ExportPhase:
             context: Execution context with validated_configuration
             
         Returns:
-            Dict with produced artifacts:
-                - docker_compose_file: Path to docker-compose.yml
-                - env_file: Path to .env file
-                - manifest_file: Path to configuration manifest
+            Dict with produced artifacts
         """
         if self.ui:
             self.ui.show_phase_header("Export Phase", "Export final configuration files for deployment")
@@ -60,191 +78,66 @@ class ExportPhase:
         # Create export directory
         self.export_dir.mkdir(parents=True, exist_ok=True)
         
+        # Add export_dir to context for steps to use
+        context['export_dir'] = str(self.export_dir)
+        
         # Check validation result
         validation_passed = context.get('validation_passed', False)
         if not validation_passed:
             logger.warning("⚠️  Configuration validation had errors - proceeding with caution")
             logger.warning("Check validation_report.yml for details")
         
-        # Load validated configuration from Phase 3
+        # Load user configuration if it's a file path
         user_config_file = context.get('user_configuration_file')
-        if not user_config_file:
-            raise ValueError("user_configuration_file not found in context")
+        if user_config_file and isinstance(user_config_file, str):
+            user_config_path = Path(user_config_file)
+            if user_config_path.exists():
+                with open(user_config_path, 'r') as f:
+                    raw_config = yaml.safe_load(f)
+                
+                # Extract user_responses and convert from dot notation to nested dict
+                user_responses = raw_config.get('user_responses', {})
+                user_config = self._convert_dot_notation_to_nested(user_responses)
+                context['user_configuration'] = user_config
         
-        with open(user_config_file, 'r') as f:
-            raw_config = yaml.safe_load(f)
+        result = {'artifacts': {}}
         
-        # Extract user_responses and convert from dot notation to nested dict
-        user_responses = raw_config.get('user_responses', {})
-        user_config = self._convert_dot_notation_to_nested(user_responses)
+        # === GENERATED: STEP_EXECUTION - DO NOT EDIT ===
+# Step 1: Export docker-compose.yml file for deployment
+        logger.info("Step 1: Export docker-compose.yml file for deployment")
+        step_1 = ExportDockerComposeStep(self.project_root, self.ui)
+        step_result = step_1.execute(context)
+        context.update(step_result.get("artifacts", {}))
+        result["artifacts"].update(step_result.get("artifacts", {}))
         
-        validated_config = context.get('validated_configuration', user_config)
+        # Step 2: Export .env file with environment variables
+        logger.info("Step 2: Export .env file with environment variables")
+        step_2 = ExportEnvFileStep(self.project_root, self.ui)
+        step_result = step_2.execute(context)
+        context.update(step_result.get("artifacts", {}))
+        result["artifacts"].update(step_result.get("artifacts", {}))
         
-        # Export docker-compose.yml
-        docker_compose_file = self._export_docker_compose(validated_config, user_config)
-        logger.info(f"Exported docker-compose.yml to {docker_compose_file}")
+        # Step 3: Export configuration manifest for deploy-manager
+        logger.info("Step 3: Export configuration manifest for deploy-manager")
+        step_3 = ExportManifestStep(self.project_root, self.ui)
+        step_result = step_3.execute(context)
+        context.update(step_result.get("artifacts", {}))
+        result["artifacts"].update(step_result.get("artifacts", {}))
         
-        # Export .env file
-        env_file = self._export_env_file(validated_config, user_config)
-        logger.info(f"Exported .env file to {env_file}")
+# === END GENERATED: STEP_EXECUTION ===
         
-        # Export configuration manifest
-        manifest_file = self._export_manifest(context)
-        logger.info(f"Exported manifest to {manifest_file}")
+        logger.info("Export Phase completed successfully")
+        logger.info(f"Files written to {self.export_dir}")
         
-        logger.info(f"Export Phase completed - Files written to {self.export_dir}")
-        
-        export_summary = {
-            'files_exported': 3,
-            'export_directory': str(self.export_dir),
-            'files': [
-                str(docker_compose_file),
-                str(env_file),
-                str(manifest_file)
-            ]
-        }
-        
+        # Return collected artifacts from context
         return {
-            'docker_compose_file': str(docker_compose_file),
-            'env_file': str(env_file),
-            'manifest_file': str(manifest_file),
-            'export_summary': export_summary,
+            'artifacts': result['artifacts'],
+            'docker_compose_file': context.get('docker_compose_file'),
+            'env_file': context.get('env_file'),
+            'manifest_file': context.get('manifest_file'),
+            'export_summary': context.get('export_summary'),
             'final_configuration_files': str(self.export_dir)
         }
-    
-    def _export_docker_compose(self, validated_config: Dict[str, Any], 
-                               user_config: Dict[str, Any]) -> Path:
-        """
-        Export docker-compose.yml file based on validated configuration.
-        """
-        output_file = self.export_dir / 'docker-compose.yml'
-        
-        # Extract configuration sections
-        project = user_config.get('project', {})
-        admin = user_config.get('admin', {})
-        database = user_config.get('database', {})
-        email = user_config.get('email', {})
-        network = user_config.get('network', {})
-        storage = user_config.get('storage', {})
-        
-        # Build docker-compose structure
-        docker_compose = {
-            'version': '3.8',
-            'services': {
-                'openproject': {
-                    'image': 'openproject/community:latest',
-                    'container_name': project.get('identifier', 'openproject'),
-                    'ports': [f"{network.get('port', 80)}:8080"],
-                    'environment': {
-                        'OPENPROJECT_HOST__NAME': network.get('domain', 'openproject.local'),
-                        'OPENPROJECT_HTTPS': str(network.get('ssl_enabled', False)).lower(),
-                        'OPENPROJECT_DEFAULT__LANGUAGE': project.get('language', 'en'),
-                        'DATABASE_URL': f"postgres://{database.get('username', 'openproject')}:{database.get('password', 'password')}@db:5432/{database.get('database_name', 'openproject')}"
-                    },
-                    'volumes': [
-                        'openproject-data:/var/openproject/assets'
-                    ],
-                    'depends_on': ['db'],
-                    'restart': 'unless-stopped'
-                },
-                'db': {
-                    'image': 'postgres:13',
-                    'container_name': f"{project.get('identifier', 'openproject')}-db",
-                    'environment': {
-                        'POSTGRES_DB': database.get('database_name', 'openproject'),
-                        'POSTGRES_USER': database.get('username', 'openproject'),
-                        'POSTGRES_PASSWORD': database.get('password', 'password')
-                    },
-                    'volumes': [
-                        'postgres-data:/var/lib/postgresql/data'
-                    ],
-                    'restart': 'unless-stopped'
-                }
-            },
-            'volumes': {
-                'openproject-data': {},
-                'postgres-data': {}
-            },
-            'networks': {
-                'default': {
-                    'name': f"{project.get('identifier', 'openproject')}-network"
-                }
-            }
-        }
-        
-        # Add email service if configured
-        if email.get('enabled'):
-            docker_compose['services']['mailhog'] = {
-                'image': 'mailhog/mailhog',
-                'container_name': f"{project.get('identifier', 'openproject')}-mail",
-                'ports': ['8025:8025', '1025:1025'],
-                'restart': 'unless-stopped'
-            }
-        
-        with open(output_file, 'w') as f:
-            yaml.dump(docker_compose, f, default_flow_style=False, sort_keys=False)
-        
-        return output_file
-    
-    def _export_env_file(self, validated_config: Dict[str, Any],
-                        user_config: Dict[str, Any]) -> Path:
-        """
-        Export .env file with environment variables.
-        """
-        output_file = self.export_dir / '.env'
-        
-        # Extract configuration sections
-        project = user_config.get('project', {})
-        admin = user_config.get('admin', {})
-        database = user_config.get('database', {})
-        email = user_config.get('email', {})
-        network = user_config.get('network', {})
-        storage = user_config.get('storage', {})
-        
-        # Build environment variables
-        env_vars = {
-            '# OpenProject Configuration': '',
-            '# Generated by config-manager': '',
-            '': '',
-            '# Project Settings': '',
-            'PROJECT_NAME': project.get('name', 'OpenProject'),
-            'PROJECT_IDENTIFIER': project.get('identifier', 'openproject'),
-            'PROJECT_LANGUAGE': project.get('language', 'en'),
-            '# Admin User': '',
-            'ADMIN_EMAIL': admin.get('email', 'admin@example.com'),
-            'ADMIN_FIRST_NAME': admin.get('first_name', 'Admin'),
-            'ADMIN_LAST_NAME': admin.get('last_name', 'User'),
-            '# Network Settings': '',
-            'OPENPROJECT_HOST__NAME': network.get('domain', 'openproject.local'),
-            'OPENPROJECT_HTTPS': str(network.get('ssl_enabled', False)).lower(),
-            'OPENPROJECT_PORT': str(network.get('port', 80)),
-            '# Database Configuration': '',
-            'POSTGRES_DB': database.get('database_name', 'openproject'),
-            'POSTGRES_USER': database.get('username', 'openproject'),
-            'POSTGRES_PASSWORD': database.get('password', 'password'),
-            'DATABASE_URL': f"postgres://{database.get('username', 'openproject')}:{database.get('password', 'password')}@db:5432/{database.get('database_name', 'openproject')}"
-        }
-        
-        # Add email settings if configured
-        if email.get('enabled'):
-            env_vars.update({
-                '# Email Configuration': '',
-                'EMAIL_DELIVERY_METHOD': email.get('smtp_server', 'smtp') if email.get('smtp_server') else 'mailhog',
-                'SMTP_ADDRESS': email.get('smtp_server', 'mailhog'),
-                'SMTP_PORT': str(email.get('smtp_port', 1025)),
-                'SMTP_DOMAIN': network.get('domain', 'openproject.local'),
-                'SMTP_USERNAME': email.get('smtp_username', ''),
-                'SMTP_PASSWORD': email.get('smtp_password', '')
-            })
-        
-        with open(output_file, 'w') as f:
-            for key, value in env_vars.items():
-                if key.startswith('#') or key == '':
-                    f.write(f"{key}\n")
-                else:
-                    f.write(f"{key}={value}\n")
-        
-        return output_file
     
     def _convert_dot_notation_to_nested(self, dot_dict: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -261,46 +154,12 @@ class ExportPhase:
                 current = current[part]
             current[parts[-1]] = value
         return result
-    
-    def _export_manifest(self, context: Dict[str, Any]) -> Path:
-        """
-        Export configuration manifest for deploy-manager.
-        """
-        output_file = self.export_dir / 'configuration_manifest.yml'
-        
-        manifest = {
-            'component': 'config-manager',
-            'version': '1.0.0',
-            'generated_at': context.get('generated_at', 'unknown'),
-            'pipeline_status': 'complete',
-            'phases_completed': [
-                'discovery',
-                'tui_mapping',
-                'collection',
-                'validation',
-                'export'
-            ],
-            'artifacts': {
-                'docker_compose': 'docker-compose.yml',
-                'environment': '.env',
-                'manifest': 'configuration_manifest.yml'
-            },
-            'ready_for_deployment': True,
-            'metadata': {
-                'discovery_summary': context.get('discovery_summary', {}),
-                'validation_status': context.get('validation_passed', False)
-            }
-        }
-        
-        with open(output_file, 'w') as f:
-            yaml.dump(manifest, f, default_flow_style=False, sort_keys=False)
-        
-        return output_file
 
 
 def main():
     """Standalone entry point for testing Phase 5: Export."""
     import argparse
+    from datetime import datetime
     
     parser = argparse.ArgumentParser(description="Phase 5: Export")
     parser.add_argument('--user-config', required=True, help='Path to user_configuration.yml from Phase 3')
@@ -318,51 +177,40 @@ def main():
     
     # Setup paths
     phase_dir = Path(__file__).parent
-    project_root = phase_dir.parent.parent  # Go up 2 levels: phase_5_export -> phases -> config-manager
+    project_root = phase_dir.parent.parent
     
     try:
         # Initialize phase
         phase = ExportPhase(project_root=project_root, ui=None)
         
-        # Load user configuration
-        user_config_path = Path(args.user_config)
-        if not user_config_path.exists():
-            print(f"❌ User configuration file not found: {user_config_path}")
-            return 1
-        
         # Build context
         context = {
-            'user_configuration_file': str(user_config_path),
-            'validation_passed': args.validation_passed
+            'user_configuration_file': args.user_config,
+            'validation_passed': args.validation_passed,
+            'generated_at': datetime.now().isoformat()
         }
         
-        # Execute phase
-        logger.info("Executing Export Phase")
+        if args.output_dir:
+            context['export_dir'] = args.output_dir
+        
+        # Execute export
         result = phase.execute(context)
         
-        print("\n" + "=" * 70)
-        print("✅ PHASE 5 COMPLETE: Export")
-        print("=" * 70)
-        print(f"\n📊 Phase Summary:")
-        
-        if 'export_summary' in result:
-            summary = result['export_summary']
-            print(f"  • Files exported: {summary.get('files_exported', 0)}")
-            print(f"  • Export directory: {summary.get('export_directory', 'N/A')}")
-            print(f"\n📁 Exported files:")
-            for file in summary.get('files', []):
-                print(f"    - {Path(file).name}")
-        
-        print(f"\n✅ Configuration ready for deployment!")
+        print(f"\n✅ Export Phase completed!")
+        print(f"📁 Files exported:")
+        print(f"  - {result.get('docker_compose_file')}")
+        print(f"  - {result.get('env_file')}")
+        print(f"  - {result.get('manifest_file')}")
+        print(f"\n✅ Ready for deployment!")
         
         return 0
         
     except Exception as e:
-        print(f"\n❌ Phase 5 failed: {e}")
+        print(f"\n❌ Export phase failed: {e}")
         import traceback
         traceback.print_exc()
         return 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     exit(main())

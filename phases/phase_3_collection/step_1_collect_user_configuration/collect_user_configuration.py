@@ -489,3 +489,30 @@ def main():
 
 if __name__ == "__main__":
     exit(main())
+
+
+class CollectUserConfigurationStep:
+    """Wrapper class for collect_user_configuration step."""
+    
+    def __init__(self, project_root: Path, ui=None):
+        self.project_root = project_root
+        self.ui = ui
+        self.phase_dir = project_root / "phases/phase_3_collection"
+    
+    def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Execute collect_user_configuration step.
+        
+        Args:
+            context: Execution context
+            
+        Returns:
+            Dict with artifacts
+        """
+        # Call existing function
+        result_data = execute_collect_user_configuration(context, self.phase_dir)
+        
+        # Return in expected format
+        return {
+            "artifacts": result_data if isinstance(result_data, dict) else {"data": result_data}
+        }

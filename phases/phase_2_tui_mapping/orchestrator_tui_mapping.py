@@ -10,14 +10,29 @@ from typing import Dict, Any
 import logging
 import sys
 
-# Conditional imports to handle both module context and standalone execution
+# === GENERATED: STEP_IMPORTS - DO NOT EDIT ===
+# Handle both relative imports (when called by parent) and absolute imports (when run standalone)
 if __name__ == '__main__':
-    # When running as standalone script, add parent to path and use absolute imports
+    # Running standalone - use absolute imports
     sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-    from phases.phase_2_tui_mapping.step_1_transform_defaults import transform_defaults
+    from phases.phase_2_tui_mapping.step_1_transform_defaults.transform_defaults import TransformDefaultsStep
 else:
     # When imported as module, use relative imports
-    from .step_1_transform_defaults import transform_defaults
+    from .step_1_transform_defaults.transform_defaults import TransformDefaultsStep
+# === END GENERATED: STEP_IMPORTS ===
+
+# Infrastructure imports (preserved, not regenerated)
+# Add phase-specific infrastructure imports here:
+# - PathResolver for artifact resolution
+# - Custom utilities or helpers
+# - External dependencies
+#
+# Example:
+# try:
+#     from control_flow_engine.runtime import PathResolver, PathResolutionError
+# except ImportError:
+#     PathResolver = None
+#     PathResolutionError = Exception
 
 logger = logging.getLogger(__name__)
 
@@ -57,20 +72,26 @@ class TuiMappingPhase:
         
         logger.info("Executing TUI Defaults Mapping")
         
-        # Validate required inputs
-        if 'enhanced_defaults_file' not in context and 'enhanced_defaults' not in context:
-            raise ValueError("Phase 2 requires enhanced_defaults_file or enhanced_defaults from Phase 1")
+        result = {'artifacts': {}}
         
-        # Step 1: Transform Defaults
-        logger.info("Step 1/1: Transform Defaults to TUI Format")
-        transform_result = transform_defaults.execute_transform_defaults(context, self.phase_dir)
+        # === GENERATED: STEP_EXECUTION - DO NOT EDIT ===
+# Step 1: Transform rich enhanced defaults to simple TUI-compatible format
+        logger.info("Step 1: Transform rich enhanced defaults to simple TUI-compatible format")
+        step_1 = TransformDefaultsStep(self.project_root, self.ui)
+        step_result = step_1.execute(context)
+        context.update(step_result.get("artifacts", {}))
+        result["artifacts"].update(step_result.get("artifacts", {}))
+        
+# === END GENERATED: STEP_EXECUTION ===
         
         logger.info("TUI Defaults Mapping completed successfully")
         
+        # Build result from collected artifacts
         return {
-            'tui_defaults_file': transform_result['tui_defaults_file'],
-            'tui_defaults': transform_result['tui_defaults'],
-            'transformation_summary': transform_result['transformation_summary']
+            'artifacts': result['artifacts'],
+            'tui_defaults_file': context.get('tui_defaults_file'),
+            'tui_defaults': context.get('tui_defaults'),
+            'transformation_summary': context.get('transformation_summary', {})
         }
 
 

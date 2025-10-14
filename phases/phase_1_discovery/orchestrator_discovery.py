@@ -10,18 +10,35 @@ from typing import Dict, Any
 import logging
 import sys
 
+# === GENERATED: STEP_IMPORTS - DO NOT EDIT ===
 # Handle both relative imports (when called by parent) and absolute imports (when run standalone)
 if __name__ == '__main__':
     # Running standalone - use absolute imports
     sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-    from phases.phase_1_discovery.step_1_env_discovery import env_discovery
-    from phases.phase_1_discovery.step_2_system_discovery import system_discovery
-    from phases.phase_1_discovery.step_3_defaults_generation import defaults_generation
+    from phases.phase_1_discovery.step_0_discovery_prompt.discovery_prompt import DiscoveryPromptStep
+    from phases.phase_1_discovery.step_1_env_discovery.env_discovery import EnvDiscoveryStep
+    from phases.phase_1_discovery.step_2_system_discovery.system_discovery import SystemDiscoveryStep
+    from phases.phase_1_discovery.step_3_defaults_generation.defaults_generation import DefaultsGenerationStep
 else:
-    # Running as module - use relative imports
-    from .step_1_env_discovery import env_discovery
-    from .step_2_system_discovery import system_discovery
-    from .step_3_defaults_generation import defaults_generation
+    # When imported as module, use relative imports
+    from .step_0_discovery_prompt.discovery_prompt import DiscoveryPromptStep
+    from .step_1_env_discovery.env_discovery import EnvDiscoveryStep
+    from .step_2_system_discovery.system_discovery import SystemDiscoveryStep
+    from .step_3_defaults_generation.defaults_generation import DefaultsGenerationStep
+# === END GENERATED: STEP_IMPORTS ===
+
+# Infrastructure imports (preserved, not regenerated)
+# Add phase-specific infrastructure imports here:
+# - PathResolver for artifact resolution
+# - Custom utilities or helpers
+# - External dependencies
+#
+# Example:
+# try:
+#     from control_flow_engine.runtime import PathResolver, PathResolutionError
+# except ImportError:
+#     PathResolver = None
+#     PathResolutionError = Exception
 
 logger = logging.getLogger(__name__)
 
@@ -57,33 +74,54 @@ class DiscoveryPhase:
         
         logger.info("Executing Discovery Phase")
         
-        # Step 1: Environment Discovery
-        logger.info("Step 1/3: Environment Discovery")
-        env_result = env_discovery.execute_env_discovery(context, self.phase_dir)
-        context['environment_data'] = env_result
+        result = {'artifacts': {}}
         
-        # Step 2: System Discovery
-        logger.info("Step 2/3: System Discovery")
-        system_result = system_discovery.execute_system_discovery(context, self.phase_dir)
-        context['system_data'] = system_result.get('system_data', {})
-        context['docker_data'] = system_result.get('docker_data', {})
-        context['network_data'] = system_result.get('network_data', {})
+        # === GENERATED: STEP_EXECUTION - DO NOT EDIT ===
+# Step 1: Ask user whether to use automatic system discovery or manual configuration
+        logger.info("Step 1: Ask user whether to use automatic system discovery or manual configuration")
+        step_1 = DiscoveryPromptStep(self.project_root, self.ui)
+        step_result = step_1.execute(context)
+        context.update(step_result.get("artifacts", {}))
+        result["artifacts"].update(step_result.get("artifacts", {}))
         
-        # Step 3: Defaults Generation
-        logger.info("Step 3/3: Intelligent Defaults Generation")
-        defaults_result = defaults_generation.execute_defaults_generation(context, self.phase_dir)
+        # Step 2: Discover environment variables and system paths
+        logger.info("Step 2: Discover environment variables and system paths")
+        step_2 = EnvDiscoveryStep(self.project_root, self.ui)
+        step_result = step_2.execute(context)
+        context.update(step_result.get("artifacts", {}))
+        result["artifacts"].update(step_result.get("artifacts", {}))
         
-        logger.info("Discovery Phase completed successfully")
+        # Step 3: Discover system information, Docker, and network configuration
+        logger.info("Step 3: Discover system information, Docker, and network configuration")
+        step_3 = SystemDiscoveryStep(self.project_root, self.ui)
+        step_result = step_3.execute(context)
+        context.update(step_result.get("artifacts", {}))
+        result["artifacts"].update(step_result.get("artifacts", {}))
         
+        # Step 4: Generate enhanced defaults from discovered system information
+        logger.info("Step 4: Generate enhanced defaults from discovered system information")
+        step_4 = DefaultsGenerationStep(self.project_root, self.ui)
+        step_result = step_4.execute(context)
+        context.update(step_result.get("artifacts", {}))
+        result["artifacts"].update(step_result.get("artifacts", {}))
+        
+# === END GENERATED: STEP_EXECUTION ===
+        
+        # Build result from collected artifacts
         return {
-            'enhanced_defaults_file': defaults_result['enhanced_defaults_file'],
-            'enhanced_defaults': defaults_result['enhanced_defaults'],
+            'artifacts': result['artifacts'],
+            'enhanced_defaults_file': context.get('enhanced_defaults_file'),
+            'enhanced_defaults': context.get('enhanced_defaults'),
+            'environment_data': context.get('environment_data'),
+            'system_data': context.get('system_data'),
+            'docker_data': context.get('docker_data'),
+            'network_data': context.get('network_data'),
             'discovery_summary': {
-                'environment_variables': len(context['environment_data'].get('all_vars', {})),
-                'system_info': 'collected',
-                'docker_info': 'collected' if context['docker_data'] else 'unavailable',
-                'network_info': 'collected',
-                'defaults_generated': defaults_result['defaults_summary']['total_defaults_generated']
+                'environment_variables': len(context.get('environment_data', {}).get('all_vars', {})),
+                'system_info': 'collected' if context.get('system_data') else 'not collected',
+                'docker_info': 'collected' if context.get('docker_data') else 'unavailable',
+                'network_info': 'collected' if context.get('network_data') else 'not collected',
+                'defaults_generated': len(context.get('enhanced_defaults', {}))
             }
         }
 

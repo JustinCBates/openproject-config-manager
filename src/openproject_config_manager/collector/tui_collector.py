@@ -325,8 +325,8 @@ def main():
         
         print(f"\n🎉 Configuration collection complete!")
         print(f"📁 Files generated:")
-        print(f"  - User responses: output/{args.flow_name}_responses.json")
-        print(f"  - Final config: output/openproject_config.json")
+        print(f"  - User responses: outputs/{args.flow_name}_responses.json")
+        print(f"  - Final config: outputs/openproject_config.json")
         if args.skip_validation:
             print(f"⚠️  Note: Validation was skipped - configuration is for testing only")
         print(f"\n✅ Ready for deployment with deploy-manager!")

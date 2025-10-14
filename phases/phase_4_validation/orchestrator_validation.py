@@ -11,18 +11,33 @@ import logging
 import yaml
 import sys
 
-# Conditional imports to handle both module context and standalone execution
+# === GENERATED: STEP_IMPORTS - DO NOT EDIT ===
+# Handle both relative imports (when called by parent) and absolute imports (when run standalone)
 if __name__ == '__main__':
-    # When running as standalone script, add parent to path and use absolute imports
+    # Running standalone - use absolute imports
     sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-    from phases.phase_4_validation.step_1_schema_validation import schema_validation
-    from phases.phase_4_validation.step_2_dependency_validation import dependency_validation
-    from phases.phase_4_validation.step_3_environment_validation import environment_validation
+    from phases.phase_4_validation.step_1_schema_validation.schema_validation import SchemaValidationStep
+    from phases.phase_4_validation.step_2_dependency_validation.dependency_validation import DependencyValidationStep
+    from phases.phase_4_validation.step_3_environment_validation.environment_validation import EnvironmentValidationStep
 else:
     # When imported as module, use relative imports
-    from .step_1_schema_validation import schema_validation
-    from .step_2_dependency_validation import dependency_validation
-    from .step_3_environment_validation import environment_validation
+    from .step_1_schema_validation.schema_validation import SchemaValidationStep
+    from .step_2_dependency_validation.dependency_validation import DependencyValidationStep
+    from .step_3_environment_validation.environment_validation import EnvironmentValidationStep
+# === END GENERATED: STEP_IMPORTS ===
+
+# Infrastructure imports (preserved, not regenerated)
+# Add phase-specific infrastructure imports here:
+# - PathResolver for artifact resolution
+# - Custom utilities or helpers
+# - External dependencies
+#
+# Example:
+# try:
+#     from control_flow_engine.runtime import PathResolver, PathResolutionError
+# except ImportError:
+#     PathResolver = None
+#     PathResolutionError = Exception
 
 logger = logging.getLogger(__name__)
 
@@ -58,63 +73,39 @@ class ValidationPhase:
         
         logger.info("Executing Validation Phase")
         
-        # Execute validation steps
-        schema_result = schema_validation.execute_schema_validation(context, self.phase_dir)
-        dependency_result = dependency_validation.execute_dependency_validation(context, self.phase_dir)
-        environment_result = environment_validation.execute_environment_validation(context, self.phase_dir)
+        result = {'artifacts': {}}
         
-        # Aggregate results
-        all_passed = (
-            schema_result.get('passed', False) and
-            dependency_result.get('passed', False) and
-            environment_result.get('passed', False)
-        )
+        # === GENERATED: STEP_EXECUTION - DO NOT EDIT ===
+# Step 1: Validate configuration against schema
+        logger.info("Step 1: Validate configuration against schema")
+        step_1 = SchemaValidationStep(self.project_root, self.ui)
+        step_result = step_1.execute(context)
+        context.update(step_result.get("artifacts", {}))
+        result["artifacts"].update(step_result.get("artifacts", {}))
         
-        # Collect all issues
-        all_errors = schema_result.get('errors', [])
-        all_warnings = (
-            schema_result.get('warnings', []) +
-            dependency_result.get('warnings', []) +
-            environment_result.get('warnings', [])
-        )
-        all_recommendations = (
-            dependency_result.get('recommendations', []) +
-            environment_result.get('recommendations', [])
-        )
+        # Step 2: Validate inter-service dependencies
+        logger.info("Step 2: Validate inter-service dependencies")
+        step_2 = DependencyValidationStep(self.project_root, self.ui)
+        step_result = step_2.execute(context)
+        context.update(step_result.get("artifacts", {}))
+        result["artifacts"].update(step_result.get("artifacts", {}))
         
-        # Generate validation report
-        validation_report = {
-            'validation_status': 'PASSED' if all_passed else 'FAILED',
-            'schema_validation': schema_result,
-            'dependency_validation': dependency_result,
-            'environment_validation': environment_result,
-            'summary': {
-                'total_errors': len(all_errors),
-                'total_warnings': len(all_warnings),
-                'total_recommendations': len(all_recommendations),
-                'passed': all_passed
-            }
-        }
+        # Step 3: Validate environment-specific requirements
+        logger.info("Step 3: Validate environment-specific requirements")
+        step_3 = EnvironmentValidationStep(self.project_root, self.ui)
+        step_result = step_3.execute(context)
+        context.update(step_result.get("artifacts", {}))
+        result["artifacts"].update(step_result.get("artifacts", {}))
         
-        # Write validation report to output
-        outputs_dir = self.project_root / "phases/outputs"
-        outputs_dir.mkdir(parents=True, exist_ok=True)
+# === END GENERATED: STEP_EXECUTION ===
         
-        report_file = outputs_dir / "validation_report.yml"
-        with open(report_file, 'w') as f:
-            yaml.dump(validation_report, f, default_flow_style=False, sort_keys=False)
+        logger.info("Validation Phase completed successfully")
         
-        logger.info(f"Validation Phase completed: {'PASSED' if all_passed else 'FAILED'}")
-        logger.info(f"Validation report written to {report_file}")
-        
-        if not all_passed:
-            logger.error(f"Validation failed with {len(all_errors)} errors")
-            for error in all_errors:
-                logger.error(f"  - {error}")
-        
+        # Return validation results from context
         return {
-            'validation_report_file': str(report_file),
-            'validation_passed': all_passed
+            'artifacts': result['artifacts'],
+            'validation_report': context.get('validation_report'),
+            'validated_configuration': context.get('validated_configuration')
         }
 
 

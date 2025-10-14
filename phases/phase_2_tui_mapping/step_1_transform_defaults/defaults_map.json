@@ -1,7 +1,7 @@
 {
     "mapping_version": "1.0.0",
     "description": "Configuration mapping from discovery output to TUI defaults",
-    "source_file": "output/discovery/discovery_output.yml",
+    "source_file": "outputs/discovery/discovery_output.yml",
     "target_file": "src/openproject_config_manager/collector/layouts/defaults/config_tui.defaults.yml",
     "field_mappings": {
         "domain": {

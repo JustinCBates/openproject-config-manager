@@ -159,7 +159,7 @@ class ConfigurationManager:
         try:
             # Load enhanced defaults file
             if not enhanced_defaults_path:
-                enhanced_defaults_path = self.project_root / "output" / "discovery" / "discovery_output.yml"
+                enhanced_defaults_path = self.project_root / "outputs" / "discovery" / "discovery_output.yml"
             
             if not Path(enhanced_defaults_path).exists():
                 raise ValueError(f"Enhanced defaults file not found: {enhanced_defaults_path}")

@@ -292,3 +292,30 @@ def main():
 
 if __name__ == '__main__':
     exit(main())
+
+
+class EnvironmentValidationStep:
+    """Wrapper class for environment_validation step."""
+    
+    def __init__(self, project_root: Path, ui=None):
+        self.project_root = project_root
+        self.ui = ui
+        self.phase_dir = project_root / "phases/phase_4_validation"
+    
+    def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Execute environment_validation step.
+        
+        Args:
+            context: Execution context
+            
+        Returns:
+            Dict with artifacts
+        """
+        # Call existing function
+        result_data = execute_environment_validation(context, self.phase_dir)
+        
+        # Return in expected format
+        return {
+            "artifacts": result_data if isinstance(result_data, dict) else {"data": result_data}
+        }

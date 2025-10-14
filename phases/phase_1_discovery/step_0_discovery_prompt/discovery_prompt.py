@@ -111,3 +111,30 @@ if __name__ == "__main__":
     
     result = execute_discovery_prompt(test_context, test_phase_dir)
     print(f"\nResult: {json.dumps(result, indent=2)}")
+
+
+class DiscoveryPromptStep:
+    """Wrapper class for discovery_prompt step."""
+    
+    def __init__(self, project_root: Path, ui=None):
+        self.project_root = project_root
+        self.ui = ui
+        self.phase_dir = project_root / "phases/phase_1_discovery"
+    
+    def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Execute discovery_prompt step.
+        
+        Args:
+            context: Execution context
+            
+        Returns:
+            Dict with artifacts
+        """
+        # Call existing function
+        result_data = execute_discovery_prompt(context, self.phase_dir)
+        
+        # Return in expected format
+        return {
+            "artifacts": result_data if isinstance(result_data, dict) else {"data": result_data}
+        }

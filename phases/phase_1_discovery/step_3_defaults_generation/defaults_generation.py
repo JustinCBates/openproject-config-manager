@@ -373,3 +373,39 @@ def main():
 
 if __name__ == '__main__':
     exit(main())
+
+
+"""
+DefaultsGenerationStep - Wrapper for existing execute_defaults_generation implementation
+"""
+
+from pathlib import Path
+from typing import Dict, Any
+from .defaults_generation import execute_defaults_generation
+
+
+class DefaultsGenerationStep:
+    """Wrapper class for defaults_generation step."""
+    
+    def __init__(self, project_root: Path, ui=None):
+        self.project_root = project_root
+        self.ui = ui
+        self.phase_dir = project_root / "phases/phase_1_discovery"
+    
+    def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Execute defaults_generation step.
+        
+        Args:
+            context: Execution context
+            
+        Returns:
+            Dict with artifacts
+        """
+        # Call existing function
+        result_data = execute_defaults_generation(context, self.phase_dir)
+        
+        # Return in expected format
+        return {
+            "artifacts": result_data if isinstance(result_data, dict) else {"data": result_data}
+        }

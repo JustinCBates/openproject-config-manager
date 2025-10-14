@@ -39,24 +39,23 @@ OUTPUT_DIR = PHASE_DIR / "outputs"
 
 # =============================================================================
 
-# Conditional imports to handle both module context and standalone execution
+# === GENERATED: STEP_IMPORTS - DO NOT EDIT ===
+# Handle both relative imports (when called by parent) and absolute imports (when run standalone)
 if __name__ == '__main__':
-    # When running as standalone script, add parent to path and use absolute imports
-    sys.path.insert(0, str(PROJECT_ROOT))
-    from phases.phase_3_collection.step_1_collect_user_configuration import collect_user_configuration
-    try:
-        from control_flow_engine.runtime import PathResolver, PathResolutionError
-    except ImportError:
-        PathResolver = None
-        PathResolutionError = Exception
+    # Running standalone - use absolute imports
+    sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+    from phases.phase_3_collection.step_1_collect_user_configuration.collect_user_configuration import CollectUserConfigurationStep
 else:
     # When imported as module, use relative imports
-    from .step_1_collect_user_configuration import collect_user_configuration
-    try:
-        from control_flow_engine.runtime import PathResolver, PathResolutionError
-    except ImportError:
-        PathResolver = None
-        PathResolutionError = Exception
+    from .step_1_collect_user_configuration.collect_user_configuration import CollectUserConfigurationStep
+# === END GENERATED: STEP_IMPORTS ===
+
+# Infrastructure imports (not generated)
+try:
+    from control_flow_engine.runtime import PathResolver, PathResolutionError
+except ImportError:
+    PathResolver = None
+    PathResolutionError = Exception
 
 logger = logging.getLogger(__name__)
 
@@ -109,31 +108,26 @@ class CollectionPhase:
         
         logger.info("Executing Interactive Collection")
         
-        # Execute collection step
-        try:
-            step_result = collect_user_configuration.execute_collect_user_configuration(
-                context, 
-                self.phase_dir
-            )
-            
-            logger.info(f"Collection completed: {step_result['status']}")
-            
-            # Return artifact paths
-            output_file = self.phase_dir / 'outputs/collected_configuration.yml'
-            
-            if not output_file.exists():
-                logger.warning(f"Expected output file not found: {output_file}")
-            
-            logger.info("Interactive Collection completed")
-            
-            return {
-                'user_configuration_file': str(output_file),
-                'user_configuration': str(output_file)  # Backward compatibility
-            }
-            
-        except Exception as e:
-            logger.error(f"Collection phase failed: {e}")
-            raise
+        result = {'artifacts': {}}
+        
+        # === GENERATED: STEP_EXECUTION - DO NOT EDIT ===
+# Step 1: Load TUI layout and defaults, render interactive form, collect user input
+        logger.info("Step 1: Load TUI layout and defaults, render interactive form, collect user input")
+        step_1 = CollectUserConfigurationStep(self.project_root, self.ui)
+        step_result = step_1.execute(context)
+        context.update(step_result.get("artifacts", {}))
+        result["artifacts"].update(step_result.get("artifacts", {}))
+        
+# === END GENERATED: STEP_EXECUTION ===
+        
+        logger.info("Interactive Collection completed successfully")
+        
+        # Return collected artifacts from context
+        return {
+            'artifacts': result['artifacts'],
+            'user_configuration_file': context.get('user_configuration_file'),
+            'user_configuration': context.get('user_configuration')
+        }
 
 
 def main():

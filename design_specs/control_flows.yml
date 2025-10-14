@@ -77,9 +77,59 @@ flows:
         description: Ask user whether to use automatic system discovery or manual
           configuration
         status: PLANNED
+        sequence: 0
         dependencies: []
         artifacts_produced:
         - discovery_config
+      - step_id: env_discovery
+        name: Environment Discovery
+        type: discovery
+        description: Discover environment variables and system paths
+        status: IMPLEMENTED
+        sequence: 1
+        dependencies: []
+        artifacts_produced:
+        - environment_data
+      - step_id: system_discovery
+        name: System Discovery
+        type: discovery
+        description: Discover system information, Docker, and network configuration
+        status: IMPLEMENTED
+        sequence: 2
+        dependencies:
+        - env_discovery
+        artifacts_produced:
+        - system_data
+        - docker_data
+        - network_data
+        units:
+        - unit_id: docker_detector
+          library: probing
+          class: DockerDiscovery
+          method: discover
+          description: Discovers Docker environment and existing containers
+        - unit_id: network_detector
+          library: probing
+          class: NetworkDiscovery
+          method: discover
+          description: Discovers network configuration and interfaces
+        - unit_id: system_detector
+          library: probing
+          class: SystemDiscovery
+          method: discover
+          description: Discovers system information (OS, CPU, memory, disk)
+      - step_id: defaults_generation
+        name: Intelligent Defaults Generation
+        type: processing
+        description: Generate enhanced defaults from discovered system information
+        status: IMPLEMENTED
+        sequence: 3
+        dependencies:
+        - env_discovery
+        - system_discovery
+        artifacts_produced:
+        - enhanced_defaults_file
+        - enhanced_defaults
     - phase_id: tui_mapping
       name: TUI Defaults Mapping
       status: IMPLEMENTED
@@ -126,6 +176,17 @@ flows:
         output_file:
         - tui_defaults_file
       sequence: 2
+      steps:
+      - step_id: transform_defaults
+        name: Transform Defaults to TUI Format
+        type: transformation
+        description: Transform rich enhanced defaults to simple TUI-compatible format
+        status: IMPLEMENTED
+        sequence: 1
+        dependencies: []
+        artifacts_produced:
+        - tui_defaults_file
+        - tui_defaults
     - phase_id: collection
       name: Interactive Collection
       status: IMPLEMENTED
@@ -160,6 +221,17 @@ flows:
           location: phases/phase_3_collection/outputs/config_tui.layout_responses.json
           note: Raw JSON responses for debugging
       sequence: 3
+      steps:
+      - step_id: collect_user_configuration
+        name: Collect User Configuration
+        type: interaction
+        description: Load TUI layout and defaults, render interactive form, collect user input
+        status: IMPLEMENTED
+        sequence: 1
+        dependencies: []
+        artifacts_produced:
+        - user_configuration
+        - user_responses
     - phase_id: validation
       name: Validation Phase
       status: IMPLEMENTED
@@ -189,6 +261,36 @@ flows:
           artifact: validation_report
           location: phases/outputs/validation_report.yml
       sequence: 4
+      steps:
+      - step_id: schema_validation
+        name: Schema Validation
+        type: validation
+        description: Validate configuration against schema
+        status: IMPLEMENTED
+        sequence: 1
+        dependencies: []
+        artifacts_produced:
+        - schema_validation_results
+      - step_id: dependency_validation
+        name: Dependency Validation
+        type: validation
+        description: Validate inter-service dependencies
+        status: IMPLEMENTED
+        sequence: 2
+        dependencies:
+        - schema_validation
+        artifacts_produced:
+        - dependency_validation_results
+      - step_id: environment_validation
+        name: Environment Validation
+        type: validation
+        description: Validate environment-specific requirements
+        status: IMPLEMENTED
+        sequence: 3
+        dependencies:
+        - schema_validation
+        artifacts_produced:
+        - environment_validation_results
     - phase_id: export
       name: Export Phase
       status: IMPLEMENTED
@@ -223,6 +325,38 @@ flows:
           location: phases/outputs/configuration_manifest.yml
           note: Metadata and manifest for deploy-manager
       sequence: 5
+      steps:
+      - step_id: export_docker_compose
+        name: Export Docker Compose
+        type: export
+        description: Export docker-compose.yml file for deployment
+        status: IMPLEMENTED
+        sequence: 1
+        dependencies: []
+        artifacts_produced:
+        - docker_compose_file
+      - step_id: export_env_file
+        name: Export Env File
+        type: export
+        description: Export .env file with environment variables
+        status: IMPLEMENTED
+        sequence: 2
+        dependencies:
+        - export_docker_compose
+        artifacts_produced:
+        - env_file
+      - step_id: export_manifest
+        name: Export Manifest
+        type: export
+        description: Export configuration manifest for deploy-manager
+        status: IMPLEMENTED
+        sequence: 3
+        dependencies:
+        - export_docker_compose
+        - export_env_file
+        artifacts_produced:
+        - manifest_file
+        - export_summary
   discovery_flow:
     description: System Discovery Process
     steps:

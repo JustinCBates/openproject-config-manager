@@ -31,7 +31,7 @@ try:
     print("=" * 60)
     
     # Check enhanced defaults file
-    enhanced_path = Path("output/discovery/enhanced_defaults.yml")
+    enhanced_path = Path("outputs/discovery/enhanced_defaults.yml")
     if enhanced_path.exists():
         print(f"✅ Enhanced defaults file created: {enhanced_path}")
         print(f"   Size: {enhanced_path.stat().st_size} bytes")

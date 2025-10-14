@@ -14,14 +14,10 @@ import sys
 if __name__ == '__main__':
     # When running as standalone script, add parent to path for absolute imports
     sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
-    from phases.phase_1_discovery.step_2_system_discovery.system import SystemDiscovery
-    from phases.phase_1_discovery.step_2_system_discovery.docker import DockerDiscovery
-    from phases.phase_1_discovery.step_2_system_discovery.network import NetworkDiscovery
+    from phases.libraries.probing import SystemDiscovery, DockerDiscovery, NetworkDiscovery
 else:
-    # When imported as module, use relative imports
-    from .system import SystemDiscovery
-    from .docker import DockerDiscovery
-    from .network import NetworkDiscovery
+    # When imported as module, use library imports
+    from phases.libraries.probing import SystemDiscovery, DockerDiscovery, NetworkDiscovery
 
 logger = logging.getLogger(__name__)
 
@@ -134,3 +130,39 @@ def main():
 
 if __name__ == '__main__':
     exit(main())
+
+
+"""
+SystemDiscoveryStep - Wrapper for existing execute_system_discovery implementation
+"""
+
+from pathlib import Path
+from typing import Dict, Any
+from .system_discovery import execute_system_discovery
+
+
+class SystemDiscoveryStep:
+    """Wrapper class for system_discovery step."""
+    
+    def __init__(self, project_root: Path, ui=None):
+        self.project_root = project_root
+        self.ui = ui
+        self.phase_dir = project_root / "phases/phase_1_discovery"
+    
+    def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Execute system_discovery step.
+        
+        Args:
+            context: Execution context
+            
+        Returns:
+            Dict with artifacts
+        """
+        # Call existing function
+        result_data = execute_system_discovery(context, self.phase_dir)
+        
+        # Return in expected format
+        return {
+            "artifacts": result_data if isinstance(result_data, dict) else {"data": result_data}
+        }

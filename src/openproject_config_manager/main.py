@@ -119,8 +119,8 @@ def update(ctx, config_file, output):
 
 
 @cli.command()
-@click.option('--output-dir', '-o', type=click.Path(), default='output',
-              help='Output directory for generated files (default: output)')
+@click.option('--output-dir', '-o', type=click.Path(), default='outputs',
+              help='Output directory for generated files (default: outputs)')
 @click.option('--flow', '-f', default='config_tui.layout',
               help='Flow name to execute (default: config_tui.layout)')
 @click.option('--mock-file', '-m', type=click.Path(exists=True),
