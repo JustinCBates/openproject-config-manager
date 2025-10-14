@@ -1,54 +1,53 @@
 metadata:
-  generated_at: '2025-10-13T05:05:46.224530'
+  generated_at: '2025-10-13T18:48:09.385001'
   probe_version: 1.0.0
   layout_file: config_tui.layout.yml
   system_info:
-    os: Unknown
-    arch: Unknown
-    hostname: unknown
-    memory_total_gb: 0
-    memory_available_gb: 0
+    os: Linux
+    arch: x86_64
+    hostname: srv1035368
+    memory_total_gb: 7.77
     cpu_cores: 0
-    cpu_model: Unknown
   network_info:
-    hostname: unknown
-    interfaces: []
-    available_ports: []
-    recommended_ports: {}
+    hostname: srv1035368
+    available_ports:
+    - 8000
+    - 8001
+    - 8002
+    - 8003
+    - 8004
+    - 8005
+    - 8006
+    - 8007
+    - 8008
+    - 8009
     conflicts: 0
   services_info:
     docker_available: false
-    existing_containers: []
-    database_containers: 0
-    postgresql_detected: false
-    mysql_detected: false
-  storage_info:
-    total_space_gb: 0
-    available_space_gb: 0
-    recommended_data_path: /opt/openproject/data
+    existing_containers: 0
 defaults:
   domain:
-    value: openproject.local
-    reason: No reliable hostname detected, using default local domain
-    probe_source: network.hostname_detection
-    confidence: low
+    value: srv1035368.hstgr.cloud
+    reason: Using detected FQDN 'srv1035368.hstgr.cloud' from network configuration
+    source: network.hostname_detection
+    confidence: high
   port:
     value: '80'
-    reason: Standard HTTP port 80 appears available
-    probe_source: network.port_availability
-    confidence: medium
+    reason: Port 80 is available and recommended
+    source: network.port_availability
+    confidence: high
   memory_limit:
     value: 2GB
-    reason: Could not detect system memory, using moderate default (2GB)
-    probe_source: system.memory_analysis
+    reason: Conservative default for limited memory
+    source: fallback
     confidence: low
   database_setup:
     value: container
-    reason: No existing database detected, recommending containerized PostgreSQL
-    probe_source: docker.container_scan
+    reason: No existing database detected, recommend containerized PostgreSQL
+    source: docker.container_scan
     confidence: high
   ssl_configuration:
-    value: Self-signed certificate
-    reason: Local deployment detected, self-signed certificate sufficient
-    probe_source: network.ssl_analysis
-    confidence: medium
+    value: Generate Let's Encrypt certificate
+    reason: Public IP detected, SSL certificate recommended
+    source: network.ssl_analysis
+    confidence: high

@@ -1,0 +1,12 @@
+# Project basics defaults
+defaults:
+  # Core project settings
+  project_name: "openproject"
+  
+  # Administrator account
+  admin_email: "admin@example.com"
+  admin_password_min_length: 8
+  
+  # UI styling for this section
+  text_input_style: "rounded"
+  password_input_style: "secure"

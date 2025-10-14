@@ -1,0 +1,28 @@
+# Project basics sublayout
+title: "Project Basics"
+description: "Basic project information and administrator account setup"
+sublayout_defaults: "defaults/subdefaults/project_basics.defaults.yml"
+
+steps:
+  - id: project_name
+    type: text
+    message: "Project name:"
+    instruction: "Used for container names, volumes, and internal references"
+    validate: required
+    default: "openproject"
+    pattern: "^[a-zA-Z][a-zA-Z0-9_-]*$"
+    error_message: "Must start with letter, contain only letters, numbers, underscores, and hyphens"
+
+  - id: admin_email
+    type: text
+    message: "Administrator email address:"
+    instruction: "Email for the primary OpenProject administrator account"
+    validate: email
+    error_message: "Please enter a valid email address"
+
+  - id: admin_password
+    type: password
+    message: "Administrator password:"
+    instruction: "Strong password for the admin account (min 8 characters)"
+    validate: password_length
+    min_length: 8

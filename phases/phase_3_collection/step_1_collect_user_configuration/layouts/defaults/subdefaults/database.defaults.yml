@@ -1,0 +1,14 @@
+# Database defaults
+defaults:
+  # PostgreSQL configuration
+  postgres_db: "openproject_db"
+  postgres_user: "openproject_user"
+  postgres_port: "5432"
+  postgres_host: "localhost"
+  
+  # Database security
+  postgres_password_min_length: 12
+  
+  # UI styling
+  password_input_style: "secure"
+  text_input_style: "border"

@@ -1,0 +1,27 @@
+defaults:
+  domain: localhost
+  port: '8080'
+  memory_limit: 2GB
+  database_setup: container
+  ssl_configuration: Generate Let's Encrypt certificate
+  project_name: openproject
+  admin_email: admin@example.com
+  admin_password_min_length: 8
+  text_input_style: underlined
+  password_input_style: secure
+  environment: production
+  debug_enabled: false
+  log_level: info
+  select_style: classic
+  postgres_db: openproject_db
+  postgres_user: openproject_user
+  postgres_port: '5432'
+  postgres_host: localhost
+  postgres_password_min_length: 12
+  protocol: http
+  ssl_enabled: false
+  ssl_redirect: false
+  cpu_limit: '1.0'
+  backup_retention: '7'
+  backup_frequency: daily
+  data_volume_size: 10GB

@@ -1,0 +1,26 @@
+# Database configuration sublayout
+title: "Database Configuration"
+description: "Database settings and credentials"
+sublayout_defaults: "defaults/subdefaults/database.defaults.yml"
+
+steps:
+  - id: postgres_db
+    type: text
+    message: "PostgreSQL database name:"
+    instruction: "Name of the database for OpenProject"
+    validate: required
+    default: "openproject_db"
+
+  - id: postgres_user
+    type: text
+    message: "PostgreSQL username:"
+    instruction: "Database user for OpenProject access"
+    validate: required
+    default: "openproject_user"
+
+  - id: postgres_password
+    type: password
+    message: "PostgreSQL password:"
+    instruction: "Strong password for the database user"
+    validate: password_length
+    min_length: 8

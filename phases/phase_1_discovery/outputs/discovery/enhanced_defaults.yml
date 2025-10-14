@@ -1,0 +1,76 @@
+metadata:
+  generated_at: '2025-10-14T02:56:25.596034'
+  probe_version: 1.0.0
+  layout_file: config_tui.layout.yml
+  system_info:
+    os: Linux
+    arch: x86_64
+    hostname: srv1035368
+    memory_total_gb: 7.77
+    memory_available_gb: 6.06
+    cpu_cores: 0
+    cpu_model: Unknown
+  network_info:
+    hostname: srv1035368
+    interfaces:
+    - lo
+    - eth0
+    - docker0
+    - br-dab8852ae553
+    - br-f182b30cd16f
+    available_ports:
+    - 8000
+    - 8001
+    - 8002
+    - 8003
+    - 8004
+    - 8005
+    - 8006
+    - 8007
+    - 8008
+    - 8009
+    recommended_ports:
+      web: 80
+      database: 5432
+      cache: 6379
+      email: 25
+      ldap: 389
+      ssh: 22
+      docker: 2375
+    conflicts: 0
+  services_info:
+    docker_available: false
+    existing_containers: []
+    database_containers: 0
+    postgresql_detected: false
+    mysql_detected: false
+  storage_info:
+    total_space_gb: 0
+    available_space_gb: 0
+    recommended_data_path: /opt/openproject/data
+defaults:
+  domain:
+    value: srv1035368.hstgr.cloud
+    reason: Using detected FQDN 'srv1035368.hstgr.cloud' from network configuration
+    probe_source: network.hostname_detection
+    confidence: high
+  port:
+    value: '80'
+    reason: Port 80 is available and recommended by network analysis
+    probe_source: network.port_availability
+    confidence: high
+  memory_limit:
+    value: 1GB
+    reason: Detected 7.8GB system RAM, recommending conservative allocation (1GB)
+    probe_source: system.memory_analysis
+    confidence: medium
+  database_setup:
+    value: container
+    reason: No existing database detected, recommending containerized PostgreSQL
+    probe_source: docker.container_scan
+    confidence: high
+  ssl_configuration:
+    value: Generate Let's Encrypt certificate
+    reason: Public IP detected, SSL certificate recommended for security
+    probe_source: network.ssl_analysis
+    confidence: high

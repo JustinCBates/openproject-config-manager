@@ -1,0 +1,58 @@
+defaults:
+  domain: srv1035368.hstgr.cloud
+  port: '80'
+  memory_limit: 1GB
+  database_setup: container
+  ssl_configuration: Generate Let's Encrypt certificate
+metadata:
+  source: discovery_phase
+  original_metadata:
+    generated_at: '2025-10-14T02:56:25.596034'
+    probe_version: 1.0.0
+    layout_file: config_tui.layout.yml
+    system_info:
+      os: Linux
+      arch: x86_64
+      hostname: srv1035368
+      memory_total_gb: 7.77
+      memory_available_gb: 6.06
+      cpu_cores: 0
+      cpu_model: Unknown
+    network_info:
+      hostname: srv1035368
+      interfaces:
+      - lo
+      - eth0
+      - docker0
+      - br-dab8852ae553
+      - br-f182b30cd16f
+      available_ports:
+      - 8000
+      - 8001
+      - 8002
+      - 8003
+      - 8004
+      - 8005
+      - 8006
+      - 8007
+      - 8008
+      - 8009
+      recommended_ports:
+        web: 80
+        database: 5432
+        cache: 6379
+        email: 25
+        ldap: 389
+        ssh: 22
+        docker: 2375
+      conflicts: 0
+    services_info:
+      docker_available: false
+      existing_containers: []
+      database_containers: 0
+      postgresql_detected: false
+      mysql_detected: false
+    storage_info:
+      total_space_gb: 0
+      available_space_gb: 0
+      recommended_data_path: /opt/openproject/data

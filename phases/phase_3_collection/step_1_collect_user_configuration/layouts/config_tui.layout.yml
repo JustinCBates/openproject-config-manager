@@ -1,0 +1,58 @@
+# Modular configuration layout using sublayouts
+title: "OpenProject Configuration"
+description: "Configure your OpenProject deployment with modular sublayouts"
+icon: 🏗️
+version: "1.0.0"
+
+# Metadata
+metadata:
+  version: "2.0.0"
+  type: "modular"
+  components: 7
+  maintainer: "OpenProject Config Manager"
+  created: "2024"
+  description: "Modular configuration layout for improved maintainability"
+
+# Global configuration settings
+defaults_file: defaults/config_tui.defaults.yml
+
+steps:
+  # Welcome and Project Basics
+  - id: welcome
+    type: info
+    title: "Welcome to OpenProject Setup"
+    message: |
+      This wizard will guide you through configuring your OpenProject instance.
+      
+      We'll collect information about:
+      • Project settings and admin account
+      • Database configuration  
+      • Network and domain setup
+      • Email delivery settings
+      • Storage and repository options
+      • Resource allocation
+      
+      All settings can be changed later if needed.
+    instruction: "Press Enter to continue"
+
+  - subid: project_basics
+    sublayout: "./sublayouts/project_basics.layout.yml"
+    
+  - subid: environment_settings
+    sublayout: "./sublayouts/environment.layout.yml"
+
+  - subid: database_config
+    sublayout: "./sublayouts/database.layout.yml"
+
+  - subid: network_setup
+    sublayout: "./sublayouts/network.layout.yml"
+
+  - subid: resource_allocation
+    sublayout: "./sublayouts/resources.layout.yml"
+
+    # Configuration summary
+  - id: confirm_config
+    type: confirm
+    message: "Proceed with this configuration?"
+    instruction: "Review the settings above and confirm to continue with deployment"
+    default: true

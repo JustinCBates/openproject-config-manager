@@ -1,0 +1,13 @@
+# Network defaults
+defaults:
+  # Network configuration
+  domain: "localhost"
+  port: "8080"
+  protocol: "http"
+  
+  # SSL settings
+  ssl_enabled: false
+  ssl_redirect: false
+  
+  # UI styling
+  text_input_style: "underlined"
