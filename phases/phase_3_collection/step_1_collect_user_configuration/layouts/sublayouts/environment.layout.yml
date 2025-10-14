@@ -1,0 +1,15 @@
+# Environment settings sublayout
+title: "Environment Settings"
+description: "Basic environment configuration"
+sublayout_defaults: "defaults/subdefaults/environment.defaults.yml"
+
+steps:
+  - id: environment
+    type: select
+    message: "Select deployment environment:"
+    instruction: "Choose the appropriate environment for this OpenProject instance"
+    choices:
+      - development
+      - staging
+      - production
+    default: "production"

@@ -1,0 +1,25 @@
+# Resource configuration sublayout
+title: "Resource Configuration"
+description: "System resource allocation"
+sublayout_defaults: "defaults/subdefaults/resources.defaults.yml"
+
+steps:
+  - id: memory_limit
+    type: select
+    message: "Memory limit for OpenProject container:"
+    instruction: "Select appropriate memory allocation based on expected usage"
+    choices:
+      - "1GB"
+      - "2GB"
+      - "4GB"
+      - "8GB"
+    default: "2GB"
+
+  - id: backup_retention
+    type: text
+    message: "Backup retention (days):"
+    instruction: "Number of days to keep backup files"
+    validate: number
+    default: "7"
+    pattern: "^[0-9]+$"
+    error_message: "Must be a positive number"

@@ -1,0 +1,15 @@
+# Resource defaults
+defaults:
+  # Memory and performance
+  memory_limit: "2GB"
+  cpu_limit: "1.0"
+  
+  # Backup settings
+  backup_retention: "7"
+  backup_frequency: "daily"
+  
+  # Storage
+  data_volume_size: "10GB"
+  
+  # UI styling
+  select_style: "classic"

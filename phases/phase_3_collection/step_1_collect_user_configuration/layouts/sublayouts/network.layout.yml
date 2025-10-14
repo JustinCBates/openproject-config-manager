@@ -1,0 +1,21 @@
+# Network configuration sublayout
+title: "Network Configuration"
+description: "Network and access settings"
+sublayout_defaults: "defaults/subdefaults/network.defaults.yml"
+
+steps:
+  - id: domain
+    type: text
+    message: "Domain/hostname:"
+    instruction: "Domain name or IP address for accessing OpenProject"
+    validate: required
+    default: "localhost"
+
+  - id: port
+    type: text
+    message: "HTTP port:"
+    instruction: "Port for web access"
+    validate: port
+    default: "8080"
+    pattern: "^[0-9]+$"
+    error_message: "Must be a valid port number"

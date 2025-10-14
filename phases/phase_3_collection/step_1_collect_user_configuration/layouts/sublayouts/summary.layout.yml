@@ -1,0 +1,10 @@
+# Configuration summary sublayout
+title: "Configuration Summary"
+description: "Review and confirm your configuration"
+
+steps:
+  - id: confirm_config
+    type: confirm
+    message: "Proceed with this configuration?"
+    instruction: "Review the settings above and confirm to continue with deployment"
+    default: true
