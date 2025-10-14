@@ -187,6 +187,12 @@ flows:
         artifacts_produced:
         - tui_defaults_file
         - tui_defaults
+        units:
+        - unit_id: defaults_transformer
+          library: transformation
+          class: DefaultsTransformer
+          method: transform_enhanced_defaults
+          description: Transforms enhanced defaults to TUI format
     - phase_id: collection
       name: Interactive Collection
       status: IMPLEMENTED
@@ -271,6 +277,12 @@ flows:
         dependencies: []
         artifacts_produced:
         - schema_validation_results
+        units:
+        - unit_id: schema_validator
+          library: validation
+          class: SchemaValidator
+          method: validate
+          description: Validates configuration against schema requirements
       - step_id: dependency_validation
         name: Dependency Validation
         type: validation
@@ -281,6 +293,12 @@ flows:
         - schema_validation
         artifacts_produced:
         - dependency_validation_results
+        units:
+        - unit_id: dependency_validator
+          library: validation
+          class: DependencyValidator
+          method: validate
+          description: Validates service dependencies and compatibility
       - step_id: environment_validation
         name: Environment Validation
         type: validation
@@ -291,6 +309,12 @@ flows:
         - schema_validation
         artifacts_produced:
         - environment_validation_results
+        units:
+        - unit_id: environment_validator
+          library: validation
+          class: EnvironmentValidator
+          method: validate
+          description: Validates environment configuration requirements
     - phase_id: export
       name: Export Phase
       status: IMPLEMENTED
@@ -335,6 +359,12 @@ flows:
         dependencies: []
         artifacts_produced:
         - docker_compose_file
+        units:
+        - unit_id: docker_compose_generator
+          library: export
+          class: DockerComposeGenerator
+          method: generate
+          description: Generates docker-compose.yml from configuration
       - step_id: export_env_file
         name: Export Env File
         type: export
@@ -345,6 +375,12 @@ flows:
         - export_docker_compose
         artifacts_produced:
         - env_file
+        units:
+        - unit_id: env_file_generator
+          library: export
+          class: EnvFileGenerator
+          method: generate
+          description: Generates .env file with environment variables
       - step_id: export_manifest
         name: Export Manifest
         type: export
@@ -357,6 +393,12 @@ flows:
         artifacts_produced:
         - manifest_file
         - export_summary
+        units:
+        - unit_id: manifest_generator
+          library: export
+          class: ManifestGenerator
+          method: generate
+          description: Generates configuration manifest for deploy-manager
   discovery_flow:
     description: System Discovery Process
     steps:
