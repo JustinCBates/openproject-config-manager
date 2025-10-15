@@ -1,7 +1,7 @@
 # Project basics sublayout
 title: "Project Basics"
 description: "Basic project information and administrator account setup"
-sublayout_defaults: "defaults/subdefaults/project_basics.defaults.yml"
+sublayout_defaults: "../defaults/subdefaults/project_basics.defaults.yml"
 
 steps:
   - id: project_name

@@ -8,6 +8,14 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 import logging
 import sys
+import yaml
+
+# PathResolver for dynamic artifact/unit resolution
+try:
+    from control_flow_engine.runtime import PathResolver, PathResolutionError
+except ImportError:
+    PathResolver = None
+    PathResolutionError = None
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -55,36 +63,136 @@ class PhasesOrchestrator:
     5. Export: Generate final configuration files
     """
     
-    def __init__(self, project_root: Path, ui=None):
+    def __init__(self, project_root: Path, ui=None, mode: str = 'hardcoded', 
+                 spec_file: Optional[Path] = None, flow_spec: Optional[Dict[str, Any]] = None):
         """
         Initialize the phases orchestrator.
         
         Args:
             project_root: Root directory of the project
             ui: Optional UI interface for user interaction
+            mode: Execution mode ('hardcoded' or 'dynamic')
+            spec_file: Path to control_flows.yml (for dynamic mode)
+            flow_spec: Pre-loaded flow specification (for dynamic mode)
         """
         self.project_root = project_root
         self.ui = ui
+        self.mode = mode
+        self.spec_file = spec_file or self.project_root / "design_specs/control_flows.yml"
+        self.flow_spec = flow_spec
         self.phases_dir = project_root / "phases"
         
-        # Initialize all phase orchestrators
-        self.discovery_phase = DiscoveryPhase(project_root, ui)
-        self.tui_mapping_phase = TuiMappingPhase(project_root, ui)
-        self.collection_phase = CollectionPhase(project_root, ui)
-        self.validation_phase = ValidationPhase(project_root, ui)
-        self.export_phase = ExportPhase(project_root, ui)
+        # Initialize PathResolver
+        if PathResolver:
+            try:
+                self.path_resolver = PathResolver.from_execution_context(__file__)
+                logger.debug(f"PathResolver initialized: {self.path_resolver.get_project_root()}")
+            except Exception as e:
+                logger.warning(f"Could not initialize PathResolver: {e}")
+                self.path_resolver = None
+        else:
+            self.path_resolver = None
         
-        logger.info("Phases orchestrator initialized")
+        # Initialize phase orchestrators with mode parameter
+        self.discovery_phase = DiscoveryPhase(project_root, ui, mode=mode)
+        self.tui_mapping_phase = TuiMappingPhase(project_root, ui, mode=mode)
+        self.collection_phase = CollectionPhase(project_root, ui, mode=mode)
+        self.validation_phase = ValidationPhase(project_root, ui, mode=mode)
+        self.export_phase = ExportPhase(project_root, ui, mode=mode)
+        
+        logger.info(f"Phases orchestrator initialized (mode: {mode})")
     
     def execute_all_phases(self, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Execute all phases in sequence.
+        
+        Supports two execution modes:
+        1. hardcoded (default): Uses static phase execution
+        2. dynamic: Reads phases from YAML control_flows.yml
         
         Args:
             context: Initial execution context (optional)
             
         Returns:
             Dict containing results from all phases
+        """
+        if self.mode == "dynamic":
+            return self._execute_dynamic(context)
+        else:
+            return self._execute_hardcoded(context)
+    
+    def _execute_dynamic(self, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Execute phases using YAML specification (dynamic mode).
+        
+        Reads phases from flow_spec and executes them in YAML-specified order.
+        """
+        if context is None:
+            context = {}
+        
+        # Load flow spec if not provided
+        if not self.flow_spec:
+            if self.spec_file and self.spec_file.exists():
+                with open(self.spec_file, 'r') as f:
+                    spec = yaml.safe_load(f)
+                    # Get first flow (or default flow)
+                    flows = spec.get('flows', {})
+                    if isinstance(flows, dict):
+                        self.flow_spec = next(iter(flows.values())) if flows else None
+                    elif isinstance(flows, list):
+                        self.flow_spec = flows[0] if flows else None
+            
+            if not self.flow_spec:
+                logger.warning("No flow spec available, falling back to hardcoded mode")
+                return self._execute_hardcoded(context)
+        
+        from datetime import datetime
+        context['generated_at'] = datetime.now().isoformat()
+        
+        logger.info("=" * 80)
+        logger.info("Starting YAML-driven configuration pipeline execution")
+        logger.info("=" * 80)
+        
+        result = {'phases': {}}
+        
+        # Execute phases in YAML order
+        for phase_spec in self.flow_spec.get('phases', []):
+            phase_id = phase_spec['phase_id']
+            phase_status = phase_spec.get('status', 'PLANNED')
+            
+            if phase_status in ['PLANNED', 'SKIPPED']:
+                logger.info(f"Skipping phase {phase_id} (status: {phase_status})")
+                continue
+            
+            logger.info(f"\n🔧 Executing phase: {phase_id}")
+            logger.info("-" * 80)
+            
+            # Map phase_id to phase instance
+            phase_instance = self._get_phase_by_id(phase_id)
+            if phase_instance:
+                phase_result = phase_instance.execute(context)
+                context.update(phase_result)
+                result['phases'][phase_id] = phase_result
+                logger.info(f"✓ Phase {phase_id} complete")
+            else:
+                logger.error(f"Unknown phase: {phase_id}")
+        
+        logger.info("\n" + "=" * 80)
+        logger.info("🎉 YAML-DRIVEN PIPELINE COMPLETE")
+        logger.info("=" * 80)
+        
+        return {
+            'pipeline_status': 'complete',
+            'execution_mode': 'dynamic',
+            'phases': result['phases'],
+            'final_context': context
+        }
+    
+    def _execute_hardcoded(self, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Hardcoded execution mode (original implementation).
+        
+        Execute all phases in fixed order with static logic.
         """
         if context is None:
             context = {}
@@ -158,6 +266,25 @@ class PhasesOrchestrator:
             logger.error(f"❌ Pipeline failed: {e}")
             raise
     
+    def _get_phase_by_id(self, phase_id: str):
+        """
+        Get phase instance by phase_id.
+        
+        Args:
+            phase_id: Phase identifier from YAML (e.g., 'discovery', 'collection')
+            
+        Returns:
+            Phase orchestrator instance or None
+        """
+        phase_map = {
+            'discovery': self.discovery_phase,
+            'tui_mapping': self.tui_mapping_phase,
+            'collection': self.collection_phase,
+            'validation': self.validation_phase,
+            'export': self.export_phase
+        }
+        return phase_map.get(phase_id)
+    
     def execute_phase(self, phase_number: int, context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Execute a single phase by number.
@@ -225,18 +352,19 @@ class PhasesOrchestrator:
         }
 
 
-def create_orchestrator(project_root: Path, ui=None) -> PhasesOrchestrator:
+def create_orchestrator(project_root: Path, ui=None, mode: str = 'hardcoded') -> PhasesOrchestrator:
     """
     Factory function to create a phases orchestrator instance.
     
     Args:
         project_root: Root directory of the project
         ui: Optional UI interface
+        mode: Execution mode ('hardcoded' or 'dynamic')
         
     Returns:
         Configured PhasesOrchestrator instance
     """
-    return PhasesOrchestrator(project_root, ui)
+    return PhasesOrchestrator(project_root, ui, mode=mode)
 
 
 def main():
@@ -303,6 +431,12 @@ Note: You can also use run_phases.py from the project root for more options.
         help='Enable verbose logging'
     )
     
+    parser.add_argument(
+        '--dynamic',
+        action='store_true',
+        help='Use YAML-driven execution mode (read phases from control_flows.yml)'
+    )
+    
     args = parser.parse_args()
     
     # Set logging level
@@ -312,8 +446,9 @@ Note: You can also use run_phases.py from the project root for more options.
     # Get project root (parent of phases directory)
     project_root = Path(__file__).parent.parent
     
-    # Create orchestrator
-    orchestrator = create_orchestrator(project_root)
+    # Create orchestrator with mode
+    mode = 'dynamic' if args.dynamic else 'hardcoded'
+    orchestrator = create_orchestrator(project_root, mode=mode)
     
     try:
         if args.all:

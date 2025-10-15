@@ -1,5 +1,5 @@
 metadata:
-  generated_at: '2025-10-14T22:10:31.860087'
+  generated_at: '2025-10-15T02:35:12.158601'
   probe_version: 1.0.0
   layout_file: config_tui.layout.yml
   system_info:
@@ -7,7 +7,7 @@ metadata:
     arch: x86_64
     hostname: srv1035368
     memory_total_gb: 7.77
-    memory_available_gb: 5.83
+    memory_available_gb: 5.46
     cpu_cores: 0
     cpu_model: Unknown
   network_info:

@@ -238,6 +238,12 @@ flows:
         artifacts_produced:
         - user_configuration
         - user_responses
+        units:
+        - unit_id: tui_form_caller
+          library: interactive
+          class: TUIFormCaller
+          method: execute_form
+          description: Executes TUI forms and collects user input with support for defaults and mock responses
     - phase_id: validation
       name: Validation Phase
       status: IMPLEMENTED

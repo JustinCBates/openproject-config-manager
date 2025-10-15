@@ -1,4 +1,5 @@
 # Modular configuration layout using sublayouts
+layout_id: config_tui
 title: "OpenProject Configuration"
 description: "Configure your OpenProject deployment with modular sublayouts"
 icon: 🏗️

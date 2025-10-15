@@ -1,7 +1,7 @@
 # Resource configuration sublayout
 title: "Resource Configuration"
 description: "System resource allocation"
-sublayout_defaults: "defaults/subdefaults/resources.defaults.yml"
+sublayout_defaults: "../defaults/subdefaults/resources.defaults.yml"
 
 steps:
   - id: memory_limit

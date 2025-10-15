@@ -1,7 +1,7 @@
 # Network configuration sublayout
 title: "Network Configuration"
 description: "Network and access settings"
-sublayout_defaults: "defaults/subdefaults/network.defaults.yml"
+sublayout_defaults: "../defaults/subdefaults/network.defaults.yml"
 
 steps:
   - id: domain

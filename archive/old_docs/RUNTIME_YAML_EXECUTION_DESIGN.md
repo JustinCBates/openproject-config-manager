@@ -1,0 +1,568 @@
+# Runtime YAML-Driven Execution - Design Document
+
+**Date:** October 15, 2025  
+**Status:** Design Phase  
+**Purpose:** Design how phase orchestrators should read and execute YAML specifications at runtime
+
+---
+
+## Problem Statement
+
+Currently, the config-manager has:
+
+✅ **YAML specification** (`control_flows.yml`) that defines:
+- Flows → Phases → Steps → Units hierarchy
+- Unit specifications (library.class.method)
+- Step dependencies and artifacts
+
+❌ **Hardcoded orchestrators** that:
+- Don't read steps from YAML
+- Don't dynamically load units from YAML
+- Can't be modified by editing YAML alone
+- Duplicate the structure already defined in YAML
+
+**Goal:** Enable orchestrators to read YAML at runtime and execute steps/units dynamically, following the control-flow system design patterns.
+
+---
+
+## Design Principles (From Control Flow System)
+
+1. **YAML is the source of truth** - Structure defined in YAML, not hardcoded
+2. **Generate, don't handwrite** - Use generators for boilerplate
+3. **Runtime flexibility** - Read YAML dynamically at runtime
+4. **Single responsibility** - Each component does one thing well
+5. **Composability** - Build complex workflows from simple components
+
+---
+
+## Current State Analysis
+
+### What We Have
+
+**`control_flows.yml` already defines:**
+
+```yaml
+flows:
+  main_config_flow:
+    phases:
+      - phase_id: discovery
+        steps:
+          - step_id: system_discovery
+            units:
+              - unit_id: docker_detector
+                library: probing
+                class: DockerDiscovery
+                method: discover
+```
+
+**Existing orchestrators (`orchestrator_discovery.py`):**
+
+```python
+class DiscoveryPhase:
+    def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        # Hardcoded step execution
+        step_1 = DiscoveryPromptStep(self.project_root, self.ui)
+        step_result = step_1.execute(context)
+        # ... more hardcoded steps
+```
+
+### The Gap
+
+The orchestrators **don't use** the YAML specification at runtime. They:
+- ❌ Don't read `steps` from YAML
+- ❌ Don't read `units` from YAML
+- ❌ Don't dynamically load `library.class.method`
+- ❌ Can't be reconfigured by editing YAML
+
+---
+
+## Proposed Solution
+
+### Three-Tier Execution Model
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ 1. GLOBAL ORCHESTRATOR (PhasesOrchestrator)                    │
+│    - Reads control_flows.yml                                    │
+│    - Executes phases from YAML                                  │
+│    - Passes phase_spec to phase orchestrators                   │
+└─────────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ 2. PHASE ORCHESTRATOR (DiscoveryPhase)                         │
+│    - Receives phase_spec from global orchestrator               │
+│    - Reads steps from phase_spec['steps']                       │
+│    - Executes steps in sequence                                 │
+│    - Passes step_spec to step executor                          │
+└─────────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ 3. STEP EXECUTOR (in phase orchestrator)                        │
+│    - Reads units from step_spec['units']                        │
+│    - Dynamically loads library.class from spec                  │
+│    - Calls method from spec                                     │
+│    - Returns results to phase orchestrator                      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Implementation Approach
+
+Following the control-flow system pattern, we should **USE THE GENERATOR** rather than write code manually.
+
+#### Option A: Use Orchestrator Regenerator (RECOMMENDED)
+
+```bash
+# Regenerate phase orchestrators from YAML
+cd /opt/openproject/external/control-flow
+python3 src/control_flow_engine/core/orchestrator_regenerator.py \
+    --spec ../config-manager/design_specs/control_flows.yml \
+    --type phase \
+    --orchestrator ../config-manager/phases/phase_1_discovery/orchestrator_discovery.py \
+    --phase-id discovery \
+    --flow main_config_flow
+```
+
+**This would:**
+- Read YAML specification
+- Generate orchestrator code from Jinja2 template
+- Include step execution based on YAML
+- Include unit loading based on YAML
+- Preserve handwritten code outside markers
+- Safe to run multiple times
+
+#### Option B: Manual Base Class (NOT RECOMMENDED)
+
+Create a base class manually and have phases extend it. This violates the "generate, don't handwrite" principle.
+
+---
+
+## Architecture Design
+
+### 1. Generated Phase Orchestrator Structure
+
+```python
+# phases/phase_1_discovery/orchestrator_discovery.py
+"""
+Phase: Discovery Phase
+Discover system environment and generate intelligent defaults
+
+Generated by Control Flow Engine
+"""
+
+from pathlib import Path
+from typing import Dict, Any
+import logging
+import yaml
+
+# === GENERATED: STEP_IMPORTS - DO NOT EDIT ===
+from .step_0_discovery_prompt.discovery_prompt import DiscoveryPromptStep
+from .step_1_env_discovery.env_discovery import EnvDiscoveryStep
+from .step_2_system_discovery.system_discovery import SystemDiscoveryStep
+from .step_3_defaults_generation.defaults_generation import DefaultsGenerationStep
+# === END GENERATED: STEP_IMPORTS ===
+
+# === INFRASTRUCTURE IMPORTS - DO NOT REGENERATE ===
+try:
+    from control_flow_engine.runtime import PathResolver, PathResolutionError
+except ImportError:
+    PathResolver = None
+    PathResolutionError = Exception
+# === END INFRASTRUCTURE IMPORTS ===
+
+logger = logging.getLogger(__name__)
+
+
+class DiscoveryPhase:
+    """
+    Discovery Phase
+    Status: IMPLEMENTED
+    
+    Discover system environment and generate intelligent defaults
+    
+    Artifacts Consumed: None
+    Artifacts Produced: enhanced_defaults_file
+    """
+    
+    def __init__(self, project_root: Path, ui=None, spec_file: Path = None, phase_spec: Dict[str, Any] = None):
+        self.project_root = project_root
+        self.ui = ui
+        self.phase_dir = project_root / "phases/phase_1_discovery"
+        
+        # NEW: Runtime YAML support
+        self.spec_file = spec_file or self.project_root / "design_specs/control_flows.yml"
+        self.phase_spec = phase_spec or self._load_phase_spec()
+        
+    def _load_phase_spec(self) -> Dict[str, Any]:
+        """Load phase specification from YAML."""
+        if not self.spec_file.exists():
+            return None
+        
+        with open(self.spec_file) as f:
+            spec = yaml.safe_load(f)
+        
+        # Find this phase in the spec
+        for flow_id, flow in spec.get('flows', {}).items():
+            for phase in flow.get('phases', []):
+                if phase.get('phase_id') == 'discovery':
+                    return phase
+        return None
+        
+    def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Execute Discovery Phase.
+        
+        Two execution modes:
+        1. YAML-driven (if phase_spec exists): Read steps from YAML, execute dynamically
+        2. Legacy (fallback): Use hardcoded step execution
+        
+        Args:
+            context: Execution context with consumed artifacts
+            
+        Returns:
+            Dict with produced artifacts
+        """
+        if self.ui:
+            self.ui.show_phase_header("Discovery Phase", "Discover system environment and generate intelligent defaults")
+        
+        logger.info("Executing Discovery Phase")
+        
+        # NEW: Try YAML-driven execution first
+        if self.phase_spec:
+            return self._execute_yaml_driven(context)
+        else:
+            logger.warning("No YAML spec found, falling back to legacy execution")
+            return self._execute_legacy(context)
+    
+    def _execute_yaml_driven(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Execute phase using YAML specification.
+        
+        Reads steps from phase_spec['steps'] and executes them in sequence.
+        For each step, checks if units are defined and loads them dynamically.
+        """
+        logger.info("Using YAML-driven execution")
+        
+        result = {'artifacts': {}}
+        
+        # Execute steps from YAML
+        for step_spec in self.phase_spec.get('steps', []):
+            step_id = step_spec['step_id']
+            step_status = step_spec.get('status', 'PLANNED')
+            
+            # Skip planned/unimplemented steps
+            if step_status in ['PLANNED', 'SKIPPED']:
+                logger.info(f"Skipping step {step_id} (status: {step_status})")
+                continue
+            
+            logger.info(f"Executing step: {step_id}")
+            
+            # Check if step has units defined
+            if 'units' in step_spec:
+                step_result = self._execute_step_with_units(step_spec, context)
+            else:
+                step_result = self._execute_step_traditional(step_spec, context)
+            
+            # Update context and results
+            context.update(step_result.get("artifacts", {}))
+            result["artifacts"].update(step_result.get("artifacts", {}))
+        
+        return self._build_result(result, context)
+    
+    def _execute_step_with_units(self, step_spec: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Execute a step by dynamically loading and calling units from YAML.
+        
+        Example step_spec:
+        {
+            'step_id': 'system_discovery',
+            'units': [
+                {'unit_id': 'docker_detector', 'library': 'probing', 'class': 'DockerDiscovery', 'method': 'discover'},
+                ...
+            ]
+        }
+        """
+        import importlib
+        
+        step_id = step_spec['step_id']
+        units = step_spec.get('units', [])
+        
+        logger.info(f"Step {step_id} has {len(units)} units")
+        
+        step_results = {}
+        
+        for unit_spec in units:
+            unit_id = unit_spec['unit_id']
+            library = unit_spec['library']
+            class_name = unit_spec['class']
+            method_name = unit_spec['method']
+            
+            try:
+                # Dynamic import: from phases.libraries.{library} import {class}
+                module_path = f"phases.libraries.{library}"
+                module = importlib.import_module(module_path)
+                unit_class = getattr(module, class_name)
+                
+                # Instantiate and call method
+                unit_instance = unit_class()
+                method = getattr(unit_instance, method_name)
+                result = method()
+                
+                logger.info(f"Unit {unit_id} executed successfully")
+                step_results[unit_id] = result
+                
+            except (ImportError, AttributeError) as e:
+                logger.warning(f"Could not load unit {unit_id}: {e}")
+                # Mock execution for unimplemented units
+                step_results[unit_id] = self._mock_unit_execution(unit_spec)
+        
+        return {'artifacts': step_results}
+    
+    def _execute_step_traditional(self, step_spec: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Execute a step using the traditional Step class approach.
+        
+        Falls back to importing and calling the Step class if no units defined.
+        """
+        step_id = step_spec['step_id']
+        
+        # Map step_id to Step class (this could also be in YAML)
+        step_class_map = {
+            'discovery_prompt': DiscoveryPromptStep,
+            'env_discovery': EnvDiscoveryStep,
+            'system_discovery': SystemDiscoveryStep,
+            'defaults_generation': DefaultsGenerationStep
+        }
+        
+        step_class = step_class_map.get(step_id)
+        if step_class:
+            step_instance = step_class(self.project_root, self.ui)
+            return step_instance.execute(context)
+        else:
+            logger.error(f"No step class found for {step_id}")
+            return {'artifacts': {}}
+    
+    def _mock_unit_execution(self, unit_spec: Dict[str, Any]) -> Dict[str, Any]:
+        """Mock execution for units that don't exist yet."""
+        logger.info(f"MOCK: Executing {unit_spec['library']}.{unit_spec['class']}.{unit_spec['method']}()")
+        return {
+            'status': 'mocked',
+            'unit': unit_spec['unit_id'],
+            'message': f"Mock execution of {unit_spec['class']}.{unit_spec['method']}()"
+        }
+    
+    # === GENERATED: STEP_EXECUTION - DO NOT EDIT ===
+    def _execute_legacy(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Legacy execution mode (fallback when no YAML spec).
+        
+        This code is preserved for backward compatibility.
+        """
+        result = {'artifacts': {}}
+        
+        # Step 1: Ask user whether to use automatic system discovery or manual configuration
+        logger.info("Step 1: Ask user whether to use automatic system discovery or manual configuration")
+        step_1 = DiscoveryPromptStep(self.project_root, self.ui)
+        step_result = step_1.execute(context)
+        context.update(step_result.get("artifacts", {}))
+        result["artifacts"].update(step_result.get("artifacts", {}))
+        
+        # Step 2: Discover environment variables and system paths
+        logger.info("Step 2: Discover environment variables and system paths")
+        step_2 = EnvDiscoveryStep(self.project_root, self.ui)
+        step_result = step_2.execute(context)
+        context.update(step_result.get("artifacts", {}))
+        result["artifacts"].update(step_result.get("artifacts", {}))
+        
+        # Step 3: Discover system information, Docker, and network configuration
+        logger.info("Step 3: Discover system information, Docker, and network configuration")
+        step_3 = SystemDiscoveryStep(self.project_root, self.ui)
+        step_result = step_3.execute(context)
+        context.update(step_result.get("artifacts", {}))
+        result["artifacts"].update(step_result.get("artifacts", {}))
+        
+        # Step 4: Generate enhanced defaults from discovered system information
+        logger.info("Step 4: Generate enhanced defaults from discovered system information")
+        step_4 = DefaultsGenerationStep(self.project_root, self.ui)
+        step_result = step_4.execute(context)
+        context.update(step_result.get("artifacts", {}))
+        result["artifacts"].update(step_result.get("artifacts", {}))
+        
+        return self._build_result(result, context)
+    # === END GENERATED: STEP_EXECUTION ===
+    
+    def _build_result(self, result: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+        """Build final result dictionary."""
+        return {
+            'artifacts': result['artifacts'],
+            'enhanced_defaults_file': context.get('enhanced_defaults_file'),
+            'enhanced_defaults': context.get('enhanced_defaults'),
+            'environment_data': context.get('environment_data'),
+            'system_data': context.get('system_data'),
+            'docker_data': context.get('docker_data'),
+            'network_data': context.get('network_data'),
+            'discovery_summary': {
+                'environment_variables': len(context.get('environment_data', {}).get('all_vars', {})),
+                'system_info': 'collected' if context.get('system_data') else 'not collected',
+                'docker_info': 'collected' if context.get('docker_data') else 'unavailable',
+                'network_info': 'collected' if context.get('network_data') else 'not collected',
+                'defaults_generated': len(context.get('enhanced_defaults', {}))
+            }
+        }
+```
+
+### 2. Global Orchestrator Changes
+
+The `DynamicOrchestrator` (or `PhasesOrchestrator`) should pass the phase spec to phase constructors:
+
+```python
+class PhasesOrchestrator:
+    def _get_phase_instance(self, phase_spec: Dict[str, Any]) -> Any:
+        """Get phase orchestrator instance, passing spec for runtime YAML support."""
+        # ... existing code ...
+        
+        # NEW: Pass spec_file and phase_spec to phase constructor
+        phase_instance = phase_class(
+            project_root=self.project_root,
+            ui=self.ui,
+            spec_file=self.spec_file,      # Path to control_flows.yml
+            phase_spec=phase_spec           # Phase definition from YAML
+        )
+        return phase_instance
+```
+
+---
+
+## Migration Strategy
+
+### Phase 1: Setup Generator Templates
+
+1. **Verify control-flow templates exist:**
+   ```bash
+   ls /opt/openproject/external/control-flow/templates/
+   ```
+
+2. **If templates don't exist, create them:**
+   - `phase_orchestrator.py.j2` - Template for phase orchestrators
+   - `global_orchestrator.py.j2` - Template for global orchestrator
+   - Include YAML-driven execution logic
+
+### Phase 2: Regenerate Orchestrators
+
+3. **Test generator on discovery phase:**
+   ```bash
+   cd /opt/openproject/external/control-flow
+   python3 src/control_flow_engine/core/orchestrator_regenerator.py \
+       --spec ../config-manager/design_specs/control_flows.yml \
+       --type phase \
+       --orchestrator ../config-manager/phases/phase_1_discovery/orchestrator_discovery.py \
+       --phase-id discovery \
+       --flow main_config_flow \
+       --dry-run  # Test first
+   ```
+
+4. **Review generated code** - Check markers, imports, logic
+
+5. **Apply for real** - Remove `--dry-run`
+
+6. **Repeat for other phases:**
+   - phase_2_tui_mapping
+   - phase_3_collection
+   - phase_4_validation
+   - phase_5_export
+
+### Phase 3: Test & Validate
+
+7. **Test individual phases:**
+   ```bash
+   cd /opt/openproject/external/config-manager
+   python3 phases/phase_1_discovery/orchestrator_discovery.py
+   ```
+
+8. **Test full pipeline:**
+   ```bash
+   python3 run_dynamic.py --flow main_config_flow
+   ```
+
+9. **Verify YAML-driven behavior:**
+   - Modify YAML (reorder steps, change status)
+   - Verify orchestrator adapts without code changes
+
+---
+
+## Benefits of This Approach
+
+### 1. Follows Control Flow Design Principles
+
+✅ **YAML is source of truth** - Steps defined in YAML  
+✅ **Generate, don't handwrite** - Use orchestrator regenerator  
+✅ **Runtime flexibility** - Read YAML dynamically  
+✅ **Single responsibility** - Orchestrator orchestrates, units execute  
+✅ **Composability** - Units can be reused across steps
+
+### 2. Backward Compatible
+
+- Keeps existing `_execute_legacy()` as fallback
+- Generated markers preserve handwritten code
+- Can migrate phases incrementally
+
+### 3. Maintainable
+
+- Generator handles boilerplate
+- Handwritten logic protected by markers
+- Easy to update when YAML changes
+
+### 4. Testable
+
+- Can test with different YAML specs
+- Can mock units easily
+- Clear separation of concerns
+
+---
+
+## Open Questions
+
+1. **Do the Jinja2 templates already exist in control-flow?**
+   - Need to check `/opt/openproject/external/control-flow/templates/`
+   - If not, need to create them
+
+2. **Should we use `orchestrator_regenerator.py` or create new generator?**
+   - Preference: Use existing regenerator
+   - May need to update templates to include YAML-driven execution
+
+3. **How to handle constructor parameters for units?**
+   - Currently units are instantiated with no args: `DockerDiscovery()`
+   - May need to extend YAML to support unit initialization parameters
+
+4. **Should step classes still exist, or pure unit-based?**
+   - Recommendation: Keep step classes for now (backward compat)
+   - Use units for new functionality
+   - Gradually migrate to pure unit-based
+
+---
+
+## Next Steps
+
+**Decision Point:** Should we:
+
+**Option A (RECOMMENDED):**
+1. Check if control-flow templates exist
+2. Use/update orchestrator regenerator to include YAML-driven execution
+3. Regenerate all phase orchestrators
+4. Test and validate
+
+**Option B (Manual):**
+1. Create base class manually (YamlDrivenPhaseOrchestrator)
+2. Update each phase to extend base class
+3. Test and validate
+
+**Which approach should we take?**
+
+---
+
+## Appendix: Control Flow System References
+
+- **Main Reference:** `/opt/openproject/external/control-flow/docs/CONTROL_FLOW_SYSTEM_REFERENCE.md`
+- **Scaffolding Spec:** `/opt/openproject/external/control-flow/SCAFFOLDING_SPEC_DETAILED.md`
+- **Templates:** `/opt/openproject/external/control-flow/templates/`
+- **Generator:** `/opt/openproject/external/control-flow/src/control_flow_engine/core/orchestrator_regenerator.py`
+

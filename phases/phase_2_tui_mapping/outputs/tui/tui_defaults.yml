@@ -7,7 +7,7 @@ defaults:
 metadata:
   source: discovery_phase
   original_metadata:
-    generated_at: '2025-10-14T02:56:25.596034'
+    generated_at: '2025-10-15T02:35:12.158601'
     probe_version: 1.0.0
     layout_file: config_tui.layout.yml
     system_info:
@@ -15,17 +15,13 @@ metadata:
       arch: x86_64
       hostname: srv1035368
       memory_total_gb: 7.77
-      memory_available_gb: 6.06
+      memory_available_gb: 5.46
       cpu_cores: 0
       cpu_model: Unknown
     network_info:
       hostname: srv1035368
       interfaces:
-      - lo
-      - eth0
-      - docker0
-      - br-dab8852ae553
-      - br-f182b30cd16f
+      - primary
       available_ports:
       - 8000
       - 8001

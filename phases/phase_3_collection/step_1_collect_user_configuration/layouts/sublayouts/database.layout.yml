@@ -1,7 +1,7 @@
 # Database configuration sublayout
 title: "Database Configuration"
 description: "Database settings and credentials"
-sublayout_defaults: "defaults/subdefaults/database.defaults.yml"
+sublayout_defaults: "../defaults/subdefaults/database.defaults.yml"
 
 steps:
   - id: postgres_db
