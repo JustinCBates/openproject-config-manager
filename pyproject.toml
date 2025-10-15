@@ -106,14 +106,17 @@ module = [
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
-testpaths = ["testing/unit", "testing/integration", "testing/validation", "testing/e2e"]
+testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = [
     "--strict-markers",
     "--strict-config",
-    "-v"
+    "-v",
+    "--tb=short",
+    "--cov-report=term-missing",
+    "--cov-report=html"
 ]
 markers = [
     "ui: UI component tests",
