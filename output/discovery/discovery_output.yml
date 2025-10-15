@@ -1,0 +1,54 @@
+metadata:
+  generated_at: '2025-10-15T00:05:53.220058'
+  probe_version: 1.0.0
+  layout_file: config_tui.layout.yml
+  system_info:
+    os: Unknown
+    arch: Unknown
+    hostname: unknown
+    memory_total_gb: 0
+    memory_available_gb: 0
+    cpu_cores: 0
+    cpu_model: Unknown
+  network_info:
+    hostname: unknown
+    interfaces: []
+    available_ports: []
+    recommended_ports: {}
+    conflicts: 0
+  services_info:
+    docker_available: false
+    existing_containers: []
+    database_containers: 0
+    postgresql_detected: false
+    mysql_detected: false
+  storage_info:
+    total_space_gb: 0
+    available_space_gb: 0
+    recommended_data_path: /opt/openproject/data
+defaults:
+  domain:
+    value: openproject.local
+    reason: No reliable hostname detected, using default local domain
+    probe_source: network.hostname_detection
+    confidence: low
+  port:
+    value: '80'
+    reason: Standard HTTP port 80 appears available
+    probe_source: network.port_availability
+    confidence: medium
+  memory_limit:
+    value: 2GB
+    reason: Could not detect system memory, using moderate default (2GB)
+    probe_source: system.memory_analysis
+    confidence: low
+  database_setup:
+    value: container
+    reason: No existing database detected, recommending containerized PostgreSQL
+    probe_source: docker.container_scan
+    confidence: high
+  ssl_configuration:
+    value: Self-signed certificate
+    reason: Local deployment detected, self-signed certificate sufficient
+    probe_source: network.ssl_analysis
+    confidence: medium
