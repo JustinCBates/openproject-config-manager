@@ -1,0 +1,207 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.2, pytest-8.4.2, pluggy-1.6.0 -- /opt/openproject/venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /opt/openproject/external/config-manager
+configfile: pyproject.toml
+plugins: mock-3.15.1, cov-7.0.0, anyio-4.11.0
+collecting ... collected 99 items
+
+tests/e2e/test_full_pipeline.py::TestFullPipelineExecution::test_orchestrator_can_be_instantiated PASSED [  1%]
+tests/e2e/test_full_pipeline.py::TestFullPipelineExecution::test_orchestrator_has_execute_all_phases_method PASSED [  2%]
+tests/e2e/test_full_pipeline.py::TestFullPipelineExecution::test_orchestrator_can_execute_individual_phases PASSED [  3%]
+tests/e2e/test_full_pipeline.py::TestFullPipelineExecution::test_context_flows_through_pipeline PASSED [  4%]
+tests/e2e/test_full_pipeline.py::TestPipelineWithLibraries::test_discovery_phase_can_use_library_units PASSED [  5%]
+tests/e2e/test_full_pipeline.py::TestPipelineWithLibraries::test_tui_mapping_phase_can_use_library_units PASSED [  6%]
+tests/e2e/test_full_pipeline.py::TestPipelineWithLibraries::test_validation_phase_can_use_library_units PASSED [  7%]
+tests/e2e/test_full_pipeline.py::TestPipelineWithLibraries::test_export_phase_can_use_library_units PASSED [  8%]
+tests/e2e/test_full_pipeline.py::TestPipelineErrorHandling::test_orchestrator_handles_missing_project_root PASSED [  9%]
+tests/e2e/test_full_pipeline.py::TestPipelineErrorHandling::test_orchestrator_handles_none_ui PASSED [ 10%]
+tests/e2e/test_full_pipeline.py::TestPipelineArtifacts::test_artifacts_directory_exists PASSED [ 11%]
+tests/e2e/test_full_pipeline.py::TestPipelineArtifacts::test_outputs_directory_exists PASSED [ 12%]
+tests/e2e/test_full_pipeline.py::TestPipelineArtifacts::test_phases_can_write_to_outputs PASSED [ 13%]
+tests/integration/flows/test_main_config_flow.py::test_manager_initialization PASSED [ 14%]
+tests/integration/flows/test_main_config_flow.py::test_flow_engine_basic PASSED [ 15%]
+tests/integration/phases/test_phase_orchestrators.py::TestPhase1DiscoveryOrchestrator::test_can_instantiate_discovery_phase PASSED [ 16%]
+tests/integration/phases/test_phase_orchestrators.py::TestPhase1DiscoveryOrchestrator::test_discovery_phase_has_execute_method PASSED [ 17%]
+tests/integration/phases/test_phase_orchestrators.py::TestPhase1DiscoveryOrchestrator::test_discovery_phase_can_load_library_units PASSED [ 18%]
+tests/integration/phases/test_phase_orchestrators.py::TestPhase2TuiMappingOrchestrator::test_can_instantiate_tui_mapping_phase PASSED [ 19%]
+tests/integration/phases/test_phase_orchestrators.py::TestPhase2TuiMappingOrchestrator::test_tui_mapping_phase_has_execute_method PASSED [ 20%]
+tests/integration/phases/test_phase_orchestrators.py::TestPhase2TuiMappingOrchestrator::test_tui_mapping_phase_can_load_library_units PASSED [ 21%]
+tests/integration/phases/test_phase_orchestrators.py::TestPhase4ValidationOrchestrator::test_can_instantiate_validation_phase PASSED [ 22%]
+tests/integration/phases/test_phase_orchestrators.py::TestPhase4ValidationOrchestrator::test_validation_phase_has_execute_method PASSED [ 23%]
+tests/integration/phases/test_phase_orchestrators.py::TestPhase4ValidationOrchestrator::test_validation_phase_can_load_library_units PASSED [ 24%]
+tests/integration/phases/test_phase_orchestrators.py::TestPhase5ExportOrchestrator::test_can_instantiate_export_phase PASSED [ 25%]
+tests/integration/phases/test_phase_orchestrators.py::TestPhase5ExportOrchestrator::test_export_phase_has_execute_method PASSED [ 26%]
+tests/integration/phases/test_phase_orchestrators.py::TestPhase5ExportOrchestrator::test_export_phase_can_load_library_units PASSED [ 27%]
+tests/integration/phases/test_phase_orchestrators.py::TestCrossPhaseIntegration::test_all_phases_can_be_instantiated_together PASSED [ 28%]
+tests/integration/phases/test_phase_orchestrators.py::TestCrossPhaseIntegration::test_context_can_be_passed_between_phases PASSED [ 29%]
+tests/integration/steps/test_phase_1_steps.py::TestDiscoveryPhaseIntegration::test_phase_context_handling PASSED [ 30%]
+tests/integration/steps/test_phase_1_steps.py::TestDiscoveryPhaseIntegration::test_phase_error_handling PASSED [ 31%]
+tests/integration/steps/test_phase_1_steps.py::TestDiscoveryPhaseIntegration::test_phase_initialization PASSED [ 32%]
+tests/integration/steps/test_phase_1_steps.py::TestDiscoveryPhaseIntegration::test_phase_produces_artifacts PASSED [ 33%]
+tests/integration/steps/test_phase_1_steps.py::TestDiscoveryPhaseIntegration::test_phase_steps_execution_order PASSED [ 34%]
+tests/integration/steps/test_phase_1_steps.py::TestDiscoveryPhaseIntegration::test_phase_with_ui_mock PASSED [ 35%]
+tests/integration/steps/test_phase_2_steps.py::TestTuiMappingPhaseIntegration::test_phase_context_handling PASSED [ 36%]
+tests/integration/steps/test_phase_2_steps.py::TestTuiMappingPhaseIntegration::test_phase_error_handling PASSED [ 37%]
+tests/integration/steps/test_phase_2_steps.py::TestTuiMappingPhaseIntegration::test_phase_initialization PASSED [ 38%]
+tests/integration/steps/test_phase_2_steps.py::TestTuiMappingPhaseIntegration::test_phase_produces_artifacts PASSED [ 39%]
+tests/integration/steps/test_phase_2_steps.py::TestTuiMappingPhaseIntegration::test_phase_steps_execution_order PASSED [ 40%]
+tests/integration/steps/test_phase_2_steps.py::TestTuiMappingPhaseIntegration::test_phase_with_ui_mock PASSED [ 41%]
+tests/integration/steps/test_phase_3_steps.py::TestCollectionPhaseIntegration::test_phase_context_handling PASSED [ 42%]
+tests/integration/steps/test_phase_3_steps.py::TestCollectionPhaseIntegration::test_phase_error_handling PASSED [ 43%]
+tests/integration/steps/test_phase_3_steps.py::TestCollectionPhaseIntegration::test_phase_initialization PASSED [ 44%]
+tests/integration/steps/test_phase_3_steps.py::TestCollectionPhaseIntegration::test_phase_produces_artifacts PASSED [ 45%]
+tests/integration/steps/test_phase_3_steps.py::TestCollectionPhaseIntegration::test_phase_steps_execution_order PASSED [ 46%]
+tests/integration/steps/test_phase_3_steps.py::TestCollectionPhaseIntegration::test_phase_with_ui_mock PASSED [ 47%]
+tests/integration/steps/test_phase_4_steps.py::TestValidationPhaseIntegration::test_phase_context_handling PASSED [ 48%]
+tests/integration/steps/test_phase_4_steps.py::TestValidationPhaseIntegration::test_phase_error_handling PASSED [ 49%]
+tests/integration/steps/test_phase_4_steps.py::TestValidationPhaseIntegration::test_phase_initialization PASSED [ 50%]
+tests/integration/steps/test_phase_4_steps.py::TestValidationPhaseIntegration::test_phase_produces_artifacts PASSED [ 51%]
+tests/integration/steps/test_phase_4_steps.py::TestValidationPhaseIntegration::test_phase_steps_execution_order PASSED [ 52%]
+tests/integration/steps/test_phase_4_steps.py::TestValidationPhaseIntegration::test_phase_with_ui_mock PASSED [ 53%]
+tests/integration/steps/test_phase_5_steps.py::TestExportPhaseIntegration::test_phase_context_handling PASSED [ 54%]
+tests/integration/steps/test_phase_5_steps.py::TestExportPhaseIntegration::test_phase_error_handling PASSED [ 55%]
+tests/integration/steps/test_phase_5_steps.py::TestExportPhaseIntegration::test_phase_initialization PASSED [ 56%]
+tests/integration/steps/test_phase_5_steps.py::TestExportPhaseIntegration::test_phase_produces_artifacts PASSED [ 57%]
+tests/integration/steps/test_phase_5_steps.py::TestExportPhaseIntegration::test_phase_steps_execution_order PASSED [ 58%]
+tests/integration/steps/test_phase_5_steps.py::TestExportPhaseIntegration::test_phase_with_ui_mock PASSED [ 59%]
+tests/scaffolding/test_control_flow_scaffolding.py::test_insert_discovery_prompt PASSED [ 60%]
+tests/unit/libraries/test_export.py::TestExportDockerComposeStep::test_can_instantiate PASSED [ 61%]
+tests/unit/libraries/test_export.py::TestExportDockerComposeStep::test_has_export_method PASSED [ 62%]
+tests/unit/libraries/test_export.py::TestExportEnvFileStep::test_can_instantiate PASSED [ 63%]
+tests/unit/libraries/test_export.py::TestExportEnvFileStep::test_has_export_method PASSED [ 64%]
+tests/unit/libraries/test_export.py::TestExportManifestStep::test_can_instantiate PASSED [ 65%]
+tests/unit/libraries/test_export.py::TestExportManifestStep::test_has_export_method PASSED [ 66%]
+tests/unit/libraries/test_export.py::TestCfgWriter::test_can_instantiate PASSED [ 67%]
+tests/unit/libraries/test_export.py::TestCfgWriter::test_has_export_method PASSED [ 68%]
+tests/unit/libraries/test_library_imports.py::TestProbingLibraryImports::test_docker_discovery_import PASSED [ 69%]
+tests/unit/libraries/test_library_imports.py::TestProbingLibraryImports::test_network_discovery_import PASSED [ 70%]
+tests/unit/libraries/test_library_imports.py::TestProbingLibraryImports::test_system_discovery_import PASSED [ 71%]
+tests/unit/libraries/test_library_imports.py::TestProbingLibraryImports::test_probing_all_exports PASSED [ 72%]
+tests/unit/libraries/test_library_imports.py::TestTransformationLibraryImports::test_defaults_transformer_import PASSED [ 73%]
+tests/unit/libraries/test_library_imports.py::TestTransformationLibraryImports::test_transformation_all_exports PASSED [ 74%]
+tests/unit/libraries/test_library_imports.py::TestValidationLibraryImports::test_schema_validator_import PASSED [ 75%]
+tests/unit/libraries/test_library_imports.py::TestValidationLibraryImports::test_dependency_validator_import PASSED [ 76%]
+tests/unit/libraries/test_library_imports.py::TestValidationLibraryImports::test_environment_validator_import PASSED [ 77%]
+tests/unit/libraries/test_library_imports.py::TestValidationLibraryImports::test_validation_all_exports PASSED [ 78%]
+tests/unit/libraries/test_library_imports.py::TestExportLibraryImports::test_export_docker_compose_step_import PASSED [ 79%]
+tests/unit/libraries/test_library_imports.py::TestExportLibraryImports::test_export_env_file_step_import PASSED [ 80%]
+tests/unit/libraries/test_library_imports.py::TestExportLibraryImports::test_export_manifest_step_import PASSED [ 81%]
+tests/unit/libraries/test_library_imports.py::TestExportLibraryImports::test_cfg_writer_import PASSED [ 82%]
+tests/unit/libraries/test_library_imports.py::TestExportLibraryImports::test_export_all_exports PASSED [ 83%]
+tests/unit/libraries/test_library_imports.py::TestTopLevelLibraryImports::test_all_libraries_exported PASSED [ 84%]
+tests/unit/libraries/test_library_imports.py::TestTopLevelLibraryImports::test_can_import_from_top_level PASSED [ 85%]
+tests/unit/libraries/test_probing.py::TestDockerDiscovery::test_can_instantiate PASSED [ 86%]
+tests/unit/libraries/test_probing.py::TestDockerDiscovery::test_has_discover_method PASSED [ 87%]
+tests/unit/libraries/test_probing.py::TestNetworkDiscovery::test_can_instantiate PASSED [ 88%]
+tests/unit/libraries/test_probing.py::TestNetworkDiscovery::test_has_discover_method PASSED [ 89%]
+tests/unit/libraries/test_probing.py::TestSystemDiscovery::test_can_instantiate PASSED [ 90%]
+tests/unit/libraries/test_probing.py::TestSystemDiscovery::test_has_discover_method PASSED [ 91%]
+tests/unit/libraries/test_transformation.py::TestDefaultsTransformer::test_can_instantiate PASSED [ 92%]
+tests/unit/libraries/test_transformation.py::TestDefaultsTransformer::test_has_transform_method PASSED [ 93%]
+tests/unit/libraries/test_validation.py::TestSchemaValidator::test_can_instantiate PASSED [ 94%]
+tests/unit/libraries/test_validation.py::TestSchemaValidator::test_has_validate_method PASSED [ 95%]
+tests/unit/libraries/test_validation.py::TestDependencyValidator::test_can_instantiate PASSED [ 96%]
+tests/unit/libraries/test_validation.py::TestDependencyValidator::test_has_validate_method PASSED [ 97%]
+tests/unit/libraries/test_validation.py::TestEnvironmentValidator::test_can_instantiate PASSED [ 98%]
+tests/unit/libraries/test_validation.py::TestEnvironmentValidator::test_has_validate_method PASSED [100%]
+
+=============================== warnings summary ===============================
+src/openproject_config_manager/core/config.py:24
+src/openproject_config_manager/core/config.py:24
+  /opt/openproject/external/config-manager/src/openproject_config_manager/core/config.py:24: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    @validator("name")
+
+src/openproject_config_manager/core/config.py:51
+src/openproject_config_manager/core/config.py:51
+  /opt/openproject/external/config-manager/src/openproject_config_manager/core/config.py:51: PydanticDeprecatedSince20: Using extra keyword arguments on `Field` is deprecated and will be removed. Use `json_schema_extra` instead. (Extra keys: 'choices'). Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    adapter: str = Field(default="postgresql", choices=["postgresql", "mysql"])
+
+src/openproject_config_manager/core/config.py:59
+src/openproject_config_manager/core/config.py:59
+  /opt/openproject/external/config-manager/src/openproject_config_manager/core/config.py:59: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    @validator("port")
+
+src/openproject_config_manager/core/config.py:78
+src/openproject_config_manager/core/config.py:78
+  /opt/openproject/external/config-manager/src/openproject_config_manager/core/config.py:78: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    @validator("domain")
+
+src/openproject_config_manager/core/config.py:95
+src/openproject_config_manager/core/config.py:95
+  /opt/openproject/external/config-manager/src/openproject_config_manager/core/config.py:95: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    @validator("backup_retention_days")
+
+src/openproject_config_manager/core/config.py:107
+src/openproject_config_manager/core/config.py:107
+  /opt/openproject/external/config-manager/src/openproject_config_manager/core/config.py:107: PydanticDeprecatedSince20: Using extra keyword arguments on `Field` is deprecated and will be removed. Use `json_schema_extra` instead. (Extra keys: 'choices'). Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    rails_env: str = Field(default="production", choices=["production", "development"])
+
+src/openproject_config_manager/core/config.py:120
+src/openproject_config_manager/core/config.py:120
+  /opt/openproject/external/config-manager/src/openproject_config_manager/core/config.py:120: PydanticDeprecatedSince20: Using extra keyword arguments on `Field` is deprecated and will be removed. Use `json_schema_extra` instead. (Extra keys: 'choices'). Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    email_delivery_method: str = Field(
+
+src/openproject_config_manager/core/config.py:144
+src/openproject_config_manager/core/config.py:144
+  /opt/openproject/external/config-manager/src/openproject_config_manager/core/config.py:144: PydanticDeprecatedSince20: Using extra keyword arguments on `Field` is deprecated and will be removed. Use `json_schema_extra` instead. (Extra keys: 'choices'). Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    attachments_storage: str = Field(default="file", choices=["file", "fog"])
+
+src/openproject_config_manager/core/config.py:148
+src/openproject_config_manager/core/config.py:148
+  /opt/openproject/external/config-manager/src/openproject_config_manager/core/config.py:148: PydanticDeprecatedSince20: Using extra keyword arguments on `Field` is deprecated and will be removed. Use `json_schema_extra` instead. (Extra keys: 'choices'). Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    log_level: str = Field(default="info", choices=["debug", "info", "warn", "error"])
+
+src/openproject_config_manager/core/config.py:102
+src/openproject_config_manager/core/config.py:102
+  /opt/openproject/external/config-manager/src/openproject_config_manager/core/config.py:102: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class Configuration(BaseModel):
+
+tests/integration/flows/test_main_config_flow.py::test_manager_initialization
+  /opt/openproject/venv/lib/python3.11/site-packages/_pytest/python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but tests/integration/flows/test_main_config_flow.py::test_manager_initialization returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+tests/integration/flows/test_main_config_flow.py::test_flow_engine_basic
+  /opt/openproject/venv/lib/python3.11/site-packages/_pytest/python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but tests/integration/flows/test_main_config_flow.py::test_flow_engine_basic returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+tests/scaffolding/test_control_flow_scaffolding.py::test_insert_discovery_prompt
+  /opt/openproject/venv/lib/python3.11/site-packages/_pytest/python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but tests/scaffolding/test_control_flow_scaffolding.py::test_insert_discovery_prompt returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.11.2-final-0 ________________
+
+Name                                                        Stmts   Miss  Cover   Missing
+-----------------------------------------------------------------------------------------
+src/openproject_config_manager/__init__.py                      5      0   100%
+src/openproject_config_manager/collector/__init__.py            2      2     0%   3-5
+src/openproject_config_manager/collector/interactive.py       254    254     0%   3-691
+src/openproject_config_manager/collector/tui_collector.py     118    118     0%   9-329
+src/openproject_config_manager/core/__init__.py                 3      0   100%
+src/openproject_config_manager/core/config.py                 197    115    42%   27-29, 34, 38-45, 61-63, 80-82, 97-99, 162-273, 278-328
+src/openproject_config_manager/core/manager.py                404    181    55%   13, 115-119, 128, 143-146, 171, 185-188, 198-242, 252-279, 292-317, 329-367, 379-389, 398-417, 440-482, 497-508, 614-616, 619-623, 646-648, 666-668, 670-672, 696-699, 800-801, 821-825, 874-907
+src/openproject_config_manager/discovery/__init__.py            5      0   100%
+src/openproject_config_manager/discovery/docker.py            241    206    15%   25-29, 32-33, 64-102, 106-134, 138-173, 177-192, 196-212, 216-252, 256-260, 264-306, 310-333, 337-358, 364-377, 381-400, 404-460, 464-561
+src/openproject_config_manager/discovery/environment.py       123     64    48%   114, 130-134, 153-163, 169-205, 225-234, 240-256, 278, 285-303
+src/openproject_config_manager/discovery/network.py           464    174    62%   81-104, 157-158, 197-199, 218-249, 269-285, 303-304, 317-318, 329, 357-360, 368, 376, 384, 406, 415-422, 432-433, 437-448, 452-461, 482-484, 506, 516-519, 526-527, 539, 563-564, 577-583, 597-610, 616-639, 650-680, 705-706, 723-724, 741-742, 754-755, 768-785, 815, 818-819, 857-858, 866-875, 879-888, 912-913
+src/openproject_config_manager/discovery/system.py            246     82    67%   69, 80, 108-109, 141-145, 151-168, 172-185, 201-220, 244-245, 265-266, 294-299, 319-324, 333-335, 374-377, 388-390, 407-410, 412-415, 425, 429, 435, 444, 466-473
+src/openproject_config_manager/export/__init__.py               2      0   100%
+src/openproject_config_manager/export/cfg_writer.py           154    138    10%   41-72, 76-83, 87-466, 481-524, 528-603
+src/openproject_config_manager/main.py                        213    213     0%   3-375
+src/openproject_config_manager/ui/__init__.py                   2      0   100%
+src/openproject_config_manager/ui/console.py                  157    157     0%   3-363
+src/openproject_config_manager/ui/questionary_ui.py            90     60    33%   33-34, 45, 53, 57, 69-73, 77-86, 96-118, 122-131, 135-142, 146-150
+src/openproject_config_manager/validation/__init__.py           2      0   100%
+src/openproject_config_manager/validation/validator.py        306    265    13%   29-30, 34, 38, 61-96, 101-115, 122-184, 191-247, 252-294, 298-336, 348-404, 409-419, 426-454, 466-498, 506-507, 511-518, 522-527, 531-532, 536-570, 574-581, 585-586, 590-603
+-----------------------------------------------------------------------------------------
+TOTAL                                                        2988   2029    32%
+Coverage HTML written to dir htmlcov
+======================= 99 passed, 23 warnings in 32.59s =======================
