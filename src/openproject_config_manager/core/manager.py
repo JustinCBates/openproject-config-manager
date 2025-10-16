@@ -30,25 +30,75 @@ logger = logging.getLogger(__name__)
 
 
 class ConfigurationManager:
-    """Main configuration manager orchestrating the 4-phase process."""
+    """Main configuration manager orchestrating the 4-phase process.
+    
+    Supports dual-mode operation:
+    - Development Mode: Uses local directories (auto-detected via .git)
+    - Production Mode: Uses paths provided by orchestrator
+    
+    Examples:
+        # Development mode (auto-detected)
+        mgr = ConfigurationManager()
+        
+        # Production mode (explicit paths)
+        mgr = ConfigurationManager(
+            output_dir=Path("/opt/openproject/config"),
+            cache_dir=Path("/opt/openproject/.openproject/cache")
+        )
+    """
 
     def __init__(
         self,
         project_root: Optional[str] = None,
         config_file: Optional[str] = None,
+        output_dir: Optional[Path] = None,
+        cache_dir: Optional[Path] = None,
+        flows_dir: Optional[Path] = None,
+        use_local_paths: Optional[bool] = None,
         verbose: bool = False,
     ):
         """
         Initialize the Configuration Manager.
 
         Args:
-            project_root: Path to the project root directory
+            project_root: Path to the project root directory (legacy, will be deprecated)
             config_file: Path to existing configuration file
+            output_dir: Where to write .env and .cfg files (None = auto-detect mode)
+            cache_dir: Where to cache discovery results (None = auto-detect mode)
+            flows_dir: Where to find TUI flow layouts (None = auto-detect mode)
+            use_local_paths: Force development mode (None = auto-detect)
             verbose: Enable verbose logging
         """
-        self.project_root = Path(project_root) if project_root else Path.cwd()
         self.config_file = config_file
         self.verbose = verbose
+        
+        # Auto-detect mode if not specified
+        if use_local_paths is None:
+            use_local_paths = self._is_development_mode()
+        
+        if use_local_paths:
+            # Development mode: Use local directories
+            base_dir = Path(__file__).parent.parent.parent
+            self.project_root = Path(project_root) if project_root else base_dir
+            self.output_dir = output_dir or base_dir / 'output'
+            self.cache_dir = cache_dir or base_dir / 'cache'
+            self.flows_dir = flows_dir or base_dir / 'src' / 'openproject_config_manager' / 'collector' / 'layouts'
+        else:
+            # Production mode: Paths must be provided
+            if output_dir is None:
+                raise ValueError(
+                    "output_dir required in production mode. "
+                    "For development, set use_local_paths=True or "
+                    "set environment variable OPENPROJECT_DEV_MODE=1"
+                )
+            self.project_root = Path(project_root) if project_root else output_dir.parent
+            self.output_dir = Path(output_dir)
+            self.cache_dir = Path(cache_dir) if cache_dir else self.output_dir / 'cache'
+            self.flows_dir = Path(flows_dir) if flows_dir else None
+        
+        # Ensure directories exist
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
 
         # Setup logging
         logging.basicConfig(
@@ -64,8 +114,16 @@ class ConfigurationManager:
         self.network_discovery = NetworkDiscovery()
 
         # Initialize flow engine with layouts directory
-        flows_dir = Path(__file__).parent.parent / "collector" / "layouts"
-        self.flow_engine = FormExecutor(flows_dir=str(flows_dir))
+        if self.flows_dir and self.flows_dir.exists():
+            self.flow_engine = FormExecutor(flows_dir=str(self.flows_dir))
+        else:
+            # Fallback to package-relative path for production
+            fallback_flows_dir = Path(__file__).parent.parent / "collector" / "layouts"
+            if fallback_flows_dir.exists():
+                self.flow_engine = FormExecutor(flows_dir=str(fallback_flows_dir))
+            else:
+                logger.warning("Flow layouts directory not found - TUI forms may not be available")
+                self.flow_engine = None
 
         # Note: Legacy InteractiveCollector removed during Questionary migration
         self.validator = ConfigurationValidator()
@@ -74,6 +132,41 @@ class ConfigurationManager:
         # State
         self.discovered_data: Dict[str, Any] = {}
         self.configuration: Optional[Configuration] = None
+
+    @staticmethod
+    def _is_development_mode() -> bool:
+        """
+        Auto-detect if running in development mode.
+        
+        Checks for:
+        1. Environment variable OPENPROJECT_DEV_MODE
+        2. Presence of .git directory (running from source)
+        3. Not in site-packages (packaged installation)
+        
+        Returns:
+            True if in development mode, False if in production mode
+        """
+        # Check environment variable
+        if os.getenv('OPENPROJECT_DEV_MODE', '').lower() in ('1', 'true', 'yes'):
+            logger.debug("Development mode: OPENPROJECT_DEV_MODE environment variable set")
+            return True
+        
+        # Check if running from git repository
+        current_file = Path(__file__).resolve()
+        
+        # Walk up the directory tree looking for .git
+        for parent in current_file.parents:
+            if (parent / '.git').exists():
+                logger.debug(f"Development mode: Found .git directory at {parent}")
+                return True
+            # Stop if we hit site-packages (packaged installation)
+            if 'site-packages' in str(parent):
+                logger.debug(f"Production mode: Running from site-packages at {parent}")
+                return False
+        
+        # Default to development if no clear indicators
+        logger.debug("Development mode: No clear indicators, defaulting to development")
+        return True
 
     def run_discovery_phase(self) -> Dict[str, Any]:
         """
@@ -734,12 +827,12 @@ class ConfigurationManager:
         """Write enhanced defaults to persistent file."""
         import yaml
 
-        # Create output directory
-        output_dir = self.project_root / "output" / "discovery"
-        output_dir.mkdir(parents=True, exist_ok=True)
+        # Create output directory (use self.output_dir for dual-mode support)
+        discovery_dir = self.output_dir / "discovery"
+        discovery_dir.mkdir(parents=True, exist_ok=True)
 
         # Write enhanced defaults file
-        enhanced_path = output_dir / "discovery_output.yml"
+        enhanced_path = discovery_dir / "discovery_output.yml"
         with open(enhanced_path, "w") as f:
             yaml.dump(enhanced_defaults, f, default_flow_style=False, sort_keys=False)
 
@@ -844,16 +937,13 @@ class ConfigurationManager:
             ],
         )
 
-        # Write to TUI defaults location
-        tui_path = (
-            self.project_root
-            / "src"
-            / "openproject_config_manager"
-            / "collector"
-            / "layouts"
-            / "defaults"
-            / "config_tui.defaults.yml"
-        )
+        # Write to TUI defaults location (use flows_dir for dual-mode support)
+        if self.flows_dir:
+            tui_path = self.flows_dir / "defaults" / "config_tui.defaults.yml"
+        else:
+            # Fallback to output_dir for production mode
+            tui_path = self.output_dir / "config_tui.defaults.yml"
+        
         tui_path.parent.mkdir(parents=True, exist_ok=True)
 
         with open(tui_path, "w") as f:
