@@ -1,13 +1,9 @@
 # Configuration Manager
 
-Interactive configuration management for Docker Compose projects with intelligent discover### Phase 4: Final Configuration Export
-```
-Export for Deployment
-├── Generate primary .cfg file (interactive_config.cfg)
-├── Convert .cfg to .env format (for Docker Compose)
-├── Create template variables (for Jinja2 rendering)
-└── Hand off to Deploy Manager
-```ve validation.
+Interactive configuration management for Docker Compose projects with intelligent discovery and live validation.
+
+**Version**: 2.0.0  
+**Dual-Mode Support**: Development & Production
 
 ## Features
 
@@ -17,6 +13,7 @@ Export for Deployment
 - **Configuration Persistence**: Generates `.env` and `.cfg` files for deployment
 - **Resumable Sessions**: Can resume interrupted configuration sessions
 - **Template Support**: Supports predefined configuration templates for common scenarios
+- **Dual-Mode Operation**: Works in both development (git submodule) and production (pip package) environments
 
 ## Purpose
 
@@ -24,34 +21,90 @@ This is a generic, reusable configuration tool designed to work with any Docker 
 
 ## Installation
 
+### Production Mode (Pip Package)
+
 ```bash
 pip install openproject-config-manager
 ```
 
-Or install from source:
+### Development Mode (Git Submodule)
 
 ```bash
 git clone https://github.com/JustinCBates/openproject-config-manager.git
 cd openproject-config-manager
-pip install -e .
+pip install -e ".[dev]"
 ```
 
 ## Usage
 
-### Basic Usage
+### Production Mode (Explicit Paths)
+
+When installed as a pip package and called by an orchestrator:
+
+```python
+from pathlib import Path
+from openproject_config_manager import ConfigurationManager
+
+# Orchestrator provides paths
+config_manager = ConfigurationManager(
+    output_dir=Path("/opt/openproject/config"),
+    cache_dir=Path("/opt/openproject/.openproject/cache"),
+    flows_dir=Path("/opt/openproject/.openproject/flows")  # Optional
+)
+
+result = config_manager.run_interactive(
+    template="openproject",
+    prober_enabled=True
+)
+
+# Configuration files written to output_dir:
+# - /opt/openproject/config/interactive_config.cfg
+# - /opt/openproject/config/.env
+print(f"Configuration saved to {result.env_path}")
+```
+
+### Development Mode (Auto-Detected)
+
+When running from git repository (development):
 
 ```python
 from openproject_config_manager import ConfigurationManager
 
-# Run interactive configuration
+# Auto-detects development mode (uses local ./output/ and ./cache/)
 config_manager = ConfigurationManager()
 result = config_manager.run_interactive(
-    template="docker-compose",
+    template="openproject",
     prober_enabled=True
 )
 
 # Result includes paths to generated files
 print(f"Configuration saved to {result.env_path}")
+```
+
+### Force Development Mode
+
+```python
+# Explicitly force development mode
+config_manager = ConfigurationManager(use_local_paths=True)
+```
+
+Or via environment variable:
+
+```bash
+export OPENPROJECT_DEV_MODE=1
+```
+
+### Custom Paths in Development
+
+```python
+from pathlib import Path
+
+# Override default paths even in development mode
+config_manager = ConfigurationManager(
+    output_dir=Path("/custom/output"),
+    cache_dir=Path("/custom/cache"),
+    use_local_paths=True
+)
 ```
 
 ### Command Line Interface
@@ -319,15 +372,115 @@ pip install -e ".[dev]"
 
 ### Testing
 
+Tests are organized by operation mode:
+
 ```bash
-# Run tests
+# Run all tests
 pytest
+
+# Test development mode
+pytest tests/test_development_mode.py -v
+
+# Test production mode
+pytest tests/test_production_mode.py -v
 
 # Run tests with coverage
 pytest --cov=openproject_config_manager --cov-report=term-missing
 
 # Run specific test
 pytest tests/test_discovery.py
+```
+
+## Environment Variables
+
+| Variable | Values | Effect |
+|----------|--------|--------|
+| `OPENPROJECT_DEV_MODE` | `1`, `true`, `yes` | Force development mode (use local paths) |
+
+**Examples**:
+
+```bash
+# Force development mode
+export OPENPROJECT_DEV_MODE=1
+python -c "from openproject_config_manager import ConfigurationManager; mgr = ConfigurationManager()"
+# Uses ./output/ and ./cache/
+
+# Production mode (default when installed via pip)
+unset OPENPROJECT_DEV_MODE
+python -c "from openproject_config_manager import ConfigurationManager; mgr = ConfigurationManager(output_dir='/opt/openproject/config')"
+# Uses /opt/openproject/config/
+```
+
+## Mode Detection
+
+The Configuration Manager auto-detects its operating mode:
+
+1. **Environment Variable Check**: If `OPENPROJECT_DEV_MODE=1`, use development mode
+2. **Git Repository Check**: If `.git` directory exists in parent paths, use development mode
+3. **Site-Packages Check**: If running from `site-packages/`, use production mode
+4. **Default**: Development mode
+
+**Override Detection**:
+
+```python
+# Force production mode even in development
+mgr = ConfigurationManager(
+    output_dir=Path("/opt/openproject/config"),
+    use_local_paths=False  # Explicitly disable auto-detection
+)
+
+# Force development mode even when installed
+mgr = ConfigurationManager(use_local_paths=True)
+```
+
+## API Reference
+
+### ConfigurationManager
+
+```python
+class ConfigurationManager:
+    def __init__(
+        self,
+        project_root: Optional[str] = None,          # Legacy (deprecated)
+        config_file: Optional[str] = None,           # Existing config to load
+        output_dir: Optional[Path] = None,           # Where to write .env, .cfg
+        cache_dir: Optional[Path] = None,            # Where to cache discovery
+        flows_dir: Optional[Path] = None,            # TUI flow layouts
+        use_local_paths: Optional[bool] = None,      # Force dev/prod mode
+        verbose: bool = False                        # Enable debug logging
+    ):
+        """
+        Initialize Configuration Manager.
+        
+        Production Mode (output_dir required):
+            mgr = ConfigurationManager(
+                output_dir=Path("/opt/openproject/config")
+            )
+        
+        Development Mode (auto-detected):
+            mgr = ConfigurationManager()
+        """
+```
+
+### Methods
+
+```python
+def run_interactive(
+    self,
+    template: str = "openproject",
+    prober_enabled: bool = True,
+    resume: bool = False
+) -> ConfigResult:
+    """
+    Run interactive configuration workflow.
+    
+    Returns:
+        ConfigResult with:
+        - success: bool
+        - config_file: Path to .cfg file
+        - env_file: Path to .env file
+        - configuration: Dict of final config
+    """
 ```
 
 ### Code Quality
