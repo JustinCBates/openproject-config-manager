@@ -13,10 +13,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 from unittest.mock import MagicMock, patch
 
-# Add paths for our components
-config_manager_src = Path(__file__).parent.parent / "src"
-sys.path.insert(0, str(config_manager_src))
-
 from openproject_config_manager.core.config import Configuration
 from openproject_config_manager.core.manager import ConfigurationManager
 

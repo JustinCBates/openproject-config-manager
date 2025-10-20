@@ -7,10 +7,6 @@ Demonstrates inserting discovery_prompt step into discovery phase.
 import sys
 from pathlib import Path
 
-# Add control-flow to path
-control_flow_path = Path(__file__).parent.parent.parent / "control-flow" / "src"
-sys.path.insert(0, str(control_flow_path))
-
 import json
 
 import yaml

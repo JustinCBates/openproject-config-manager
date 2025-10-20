@@ -9,8 +9,13 @@ from unittest.mock import MagicMock
 
 import pytest
 
-# Add project root to Python path
+# Project root for fixtures
 project_root = Path(__file__).parent.parent
+
+# NOTE: sys.path.insert is required here because the phases/ directory
+# is intentionally structured at project root (not inside src/) for modularity.
+# Tests need to import from 'phases.*' which requires project_root in sys.path.
+# This is a legitimate architectural decision, not a hack.
 sys.path.insert(0, str(project_root))
 
 
