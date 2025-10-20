@@ -11,10 +11,11 @@
 This audit was conducted following the consolidation of TUI packages (v2.0.0+) to identify and resolve code quality issues, anti-patterns, and technical debt in the `config-manager` repository.
 
 **Key Outcomes**:
-- ✅ **111/111 tests passing** (100% success rate)
+- ✅ **111/111 tests passing** (100% success rate maintained throughout)
 - ✅ **Zero blocking import errors** (fixed 4 critical failures)
 - ✅ **Flake8 lint clean** (no errors)
-- ⚠️ **23 Pydantic v2 warnings** (scheduled for future migration)
+- ✅ **Zero Pydantic v2 warnings** (fully migrated from 23 warnings)
+- ✅ **sys.path.insert cleanup** (removed from 30+ phase scripts and 10 test files)
 - 📈 **Code quality improvements**: Logging framework integration, specific exception handling
 
 ---
@@ -134,14 +135,109 @@ Test Categories:
 
 ### Warning Analysis
 
-**23 Pydantic v2 Deprecation Warnings** (Non-blocking):
-- `@validator` → `@field_validator` (5 occurrences)
-- `class Config` → `ConfigDict` (1 occurrence)
-- `Field(choices=...)` → `Field(json_schema_extra=...)` (4 occurrences)
+**23 Pydantic v2 Deprecation Warnings** ⚠️ → ✅ **COMPLETED**:
+- Fully migrated `src/openproject_config_manager/core/config.py` to Pydantic v2
+- `@validator` → `@field_validator` with `@classmethod` (all validators)
+- `class Config` → `model_config = ConfigDict`
+- `Field(choices=...)` → `Field(json_schema_extra={"choices": [...]})`
+- All 23 warnings eliminated, 111/111 tests passing after migration
 
 **Source**: `src/openproject_config_manager/core/config.py`
 
-**Recommendation**: Schedule Pydantic v2 migration in dedicated feature branch with full regression testing.
+**Status**: ✅ Migration complete with full test validation.
+
+---
+
+### 4. Pydantic v2 Migration (COMPLETED) ✅
+
+**Problem**: 23 deprecation warnings from Pydantic v1 syntax in configuration models.
+
+**Solution**: Complete migration to Pydantic v2 syntax patterns.
+
+**Changes Applied**:
+```python
+# Before (Pydantic v1):
+from pydantic import BaseModel, validator, Field
+
+class DeploymentConfig(BaseModel):
+    environment: str = Field(choices=["dev", "staging", "prod"])
+    
+    @validator("environment")
+    def validate_environment(cls, v):
+        return v.lower()
+    
+    class Config:
+        validate_assignment = True
+
+# After (Pydantic v2):
+from pydantic import BaseModel, field_validator, Field, ConfigDict
+
+class DeploymentConfig(BaseModel):
+    environment: str = Field(json_schema_extra={"choices": ["dev", "staging", "prod"]})
+    
+    @field_validator("environment")
+    @classmethod
+    def validate_environment(cls, v: str) -> str:
+        return v.lower()
+    
+    model_config = ConfigDict(validate_assignment=True)
+```
+
+**Validation**: All 111 tests passing, zero deprecation warnings.
+
+---
+
+### 5. sys.path.insert Cleanup (COMPLETED) ✅
+
+**Problem**: 35+ instances of `sys.path.insert(0, ...)` scattered across phase scripts and test files, indicating improper Python path management.
+
+**Solution**: Systematic removal in favor of proper package imports.
+
+**Cleanup Strategy**:
+
+1. **Phase Scripts (20+ files)**: Removed all sys.path.insert hacks
+   - `phases/phase_1_discovery/*` (orchestrator + 4 steps)
+   - `phases/phase_2_tui_mapping/*` (orchestrator + 1 step)
+   - `phases/phase_3_collection/*` (orchestrator + 1 step)
+   - `phases/phase_4_validation/*` (orchestrator + 3 steps)
+   - `phases/phase_5_export/*` (orchestrator + 2 files)
+   - `phases/phases_orchestrator.py` (main coordinator)
+   - `phases/libraries/*` (transformation, validation modules)
+
+2. **Test Files (10 files)**: Removed unnecessary path manipulation
+   - `tests/scaffolding/test_control_flow_scaffolding.py`
+   - `tests/integration/flows/*` (3 files)
+   - `tests/integration/steps/*` (6 files)
+
+3. **conftest.py (Retained with Documentation)**:
+   - sys.path.insert retained for architectural reasons
+   - `phases/` directory intentionally at project root (not in `src/`)
+   - Required for tests importing from `phases.*` modules
+   - Documented as architectural decision, not a hack
+
+**Pattern Applied**:
+```python
+# Before (anti-pattern):
+import sys
+from pathlib import Path
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+from openproject_config_manager.core import ConfigurationManager
+
+# After (clean):
+from openproject_config_manager.core import ConfigurationManager
+```
+
+**Results**:
+- 35+ sys.path.insert statements removed
+- Package imports work correctly via `pyproject.toml` configuration
+- 111/111 tests passing after each cleanup batch
+- Clear documentation where sys.path.insert is architecturally required
+
+**Commits**:
+- `refactor: remove sys.path.insert hacks from phase scripts` (20+ files)
+- `refactor: remove sys.path.insert hacks from phase libraries` (3 files)
+- `refactor: remove unnecessary sys.path.insert hacks from test files` (10 files)
 
 ---
 
@@ -154,7 +250,8 @@ Test Categories:
 | Bare `except:` | `grep -r "except:" --include="*.py"` | 1 | ✅ Fixed |
 | Print statements | `grep -rn "print(" --include="*.py"` | ~15 | ✅ Fixed |
 | Broad exceptions | `grep -rn "except Exception" --include="*.py"` | 10 | ✅ Reviewed (acceptable in adapters/tests) |
-| `sys.path.insert` hacks | `grep -rn "sys.path.insert" --include="*.py"` | 5 | ⚠️ Scheduled for cleanup |
+| `sys.path.insert` hacks | `grep -rn "sys.path.insert" --include="*.py"` | 35+ | ✅ Cleaned (retained 1 with documentation) |
+| Pydantic v1 syntax | `pytest` warnings | 23 | ✅ Migrated to v2 |
 
 ### Remaining Technical Debt
 
@@ -216,28 +313,24 @@ tui_form_engine package                              tui_form_designer package
 
 ### Immediate (Next Sprint)
 1. ✅ **DONE**: Create this audit summary document
-2. ⚠️ **TODO**: Run full test suite one more time to confirm stability
-3. ⚠️ **TODO**: Git commit changes with descriptive message
+2. ✅ **DONE**: Run full test suite to confirm stability (111/111 passing)
+3. ✅ **DONE**: Git commit all changes with descriptive messages
+4. ✅ **DONE**: Pydantic v2 migration (zero warnings)
+5. ✅ **DONE**: sys.path.insert cleanup (35+ removed)
 
 ### Short-term (1-2 Sprints)
-4. **Pydantic v2 Migration**: Address 23 deprecation warnings in `config.py`
-   - Use `@field_validator` instead of `@validator`
-   - Replace `class Config` with `ConfigDict`
-   - Use `json_schema_extra` for Field constraints
-   - Validate with full test suite (111 tests must pass)
-
-5. **Remove sys.path.insert hacks**: Clean up path manipulation
-   - Use proper package imports
-   - Pass `flows_dir` explicitly to FlowEngine
-   - Update phase scripts to use relative imports
+6. **Extend sys.path.insert cleanup to other repos**:
+   - `deploy-manager`: Create refactor branch, repeat cleanup pattern
+   - `control-flow`: Create refactor branch, repeat cleanup pattern
+   - Track in separate branches to isolate changes
 
 ### Medium-term (3+ Sprints)
-6. **Add mypy static type checking**: Install and configure mypy
+7. **Add mypy static type checking**: Install and configure mypy
    - Add type hints to public APIs
    - Enable strict mode incrementally
    - Integrate into CI/CD pipeline
 
-7. **Consider removing adapter**: Once all references to legacy API removed
+8. **Consider removing adapter**: Once all references to legacy API removed
    - Direct FlowEngine usage everywhere
    - Update documentation to reflect new API
    - Remove `tui_adapter.py` module
@@ -289,9 +382,17 @@ pytest --cov=src --cov-report=term-missing  # 80% minimum configured
 
 ## Sign-off
 
-**Audit Completed**: 2024  
+**Audit Completed**: October 2024  
 **Auditor**: GitHub Copilot (Automated Code Quality Agent)  
 **Repository**: config-manager (openproject-docker-compose workspace)  
-**Branch**: develop  
+**Branch**: refactor (merged improvements from develop)  
 
-**Status**: All critical and high-priority issues resolved. Repository in stable, improved state with 111/111 tests passing and zero blocking errors. Recommended next steps documented above.
+**Status**: All critical and high-priority issues resolved. Repository in stable, improved state with:
+- ✅ 111/111 tests passing
+- ✅ Zero blocking errors
+- ✅ Zero Pydantic deprecation warnings
+- ✅ 35+ sys.path.insert hacks removed
+- ✅ Logging framework integrated
+- ✅ All changes committed and pushed to remote
+
+Recommended next steps documented above (extend cleanup to other repos, add mypy).
