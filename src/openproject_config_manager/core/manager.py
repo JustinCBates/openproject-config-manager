@@ -7,11 +7,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-# Add TUI Form Engine to Python path for development environment
-_tui_engine_path = Path(__file__).parent.parent.parent.parent.parent / "tui-form-designer" / "src"
-if _tui_engine_path.exists() and str(_tui_engine_path) not in sys.path:
-    sys.path.insert(0, str(_tui_engine_path))
-
 # Import the TUI Form Designer FlowEngine (consolidated package)
 from tui_form_designer.core.flow_engine import FlowEngine
 
@@ -31,15 +26,15 @@ logger = logging.getLogger(__name__)
 
 class ConfigurationManager:
     """Main configuration manager orchestrating the 4-phase process.
-    
+
     Supports dual-mode operation:
     - Development Mode: Uses local directories (auto-detected via .git)
     - Production Mode: Uses paths provided by orchestrator
-    
+
     Examples:
         # Development mode (auto-detected)
         mgr = ConfigurationManager()
-        
+
         # Production mode (explicit paths)
         mgr = ConfigurationManager(
             output_dir=Path("/opt/openproject/config"),
@@ -71,18 +66,25 @@ class ConfigurationManager:
         """
         self.config_file = config_file
         self.verbose = verbose
-        
+
         # Auto-detect mode if not specified
         if use_local_paths is None:
             use_local_paths = self._is_development_mode()
-        
+
         if use_local_paths:
             # Development mode: Use local directories
             base_dir = Path(__file__).parent.parent.parent
             self.project_root = Path(project_root) if project_root else base_dir
-            self.output_dir = output_dir or base_dir / 'output'
-            self.cache_dir = cache_dir or base_dir / 'cache'
-            self.flows_dir = flows_dir or base_dir / 'src' / 'openproject_config_manager' / 'collector' / 'layouts'
+            self.output_dir = output_dir or base_dir / "output"
+            self.cache_dir = cache_dir or base_dir / "cache"
+            self.flows_dir = (
+                flows_dir
+                or base_dir
+                / "src"
+                / "openproject_config_manager"
+                / "collector"
+                / "layouts"
+            )
         else:
             # Production mode: Paths must be provided
             if output_dir is None:
@@ -91,11 +93,13 @@ class ConfigurationManager:
                     "For development, set use_local_paths=True or "
                     "set environment variable OPENPROJECT_DEV_MODE=1"
                 )
-            self.project_root = Path(project_root) if project_root else output_dir.parent
+            self.project_root = (
+                Path(project_root) if project_root else output_dir.parent
+            )
             self.output_dir = Path(output_dir)
-            self.cache_dir = Path(cache_dir) if cache_dir else self.output_dir / 'cache'
+            self.cache_dir = Path(cache_dir) if cache_dir else self.output_dir / "cache"
             self.flows_dir = Path(flows_dir) if flows_dir else None
-        
+
         # Ensure directories exist
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
@@ -122,7 +126,9 @@ class ConfigurationManager:
             if fallback_flows_dir.exists():
                 self.flow_engine = FlowEngine(flows_dir=str(fallback_flows_dir))
             else:
-                logger.warning("Flow layouts directory not found - TUI forms may not be available")
+                logger.warning(
+                    "Flow layouts directory not found - TUI forms may not be available"
+                )
                 self.flow_engine = None
 
         # Note: Legacy InteractiveCollector removed during Questionary migration
@@ -137,33 +143,35 @@ class ConfigurationManager:
     def _is_development_mode() -> bool:
         """
         Auto-detect if running in development mode.
-        
+
         Checks for:
         1. Environment variable OPENPROJECT_DEV_MODE
         2. Presence of .git directory (running from source)
         3. Not in site-packages (packaged installation)
-        
+
         Returns:
             True if in development mode, False if in production mode
         """
         # Check environment variable
-        if os.getenv('OPENPROJECT_DEV_MODE', '').lower() in ('1', 'true', 'yes'):
-            logger.debug("Development mode: OPENPROJECT_DEV_MODE environment variable set")
+        if os.getenv("OPENPROJECT_DEV_MODE", "").lower() in ("1", "true", "yes"):
+            logger.debug(
+                "Development mode: OPENPROJECT_DEV_MODE environment variable set"
+            )
             return True
-        
+
         # Check if running from git repository
         current_file = Path(__file__).resolve()
-        
+
         # Walk up the directory tree looking for .git
         for parent in current_file.parents:
-            if (parent / '.git').exists():
+            if (parent / ".git").exists():
                 logger.debug(f"Development mode: Found .git directory at {parent}")
                 return True
             # Stop if we hit site-packages (packaged installation)
-            if 'site-packages' in str(parent):
+            if "site-packages" in str(parent):
                 logger.debug(f"Production mode: Running from site-packages at {parent}")
                 return False
-        
+
         # Default to development if no clear indicators
         logger.debug("Development mode: No clear indicators, defaulting to development")
         return True
@@ -176,7 +184,9 @@ class ConfigurationManager:
         Returns:
             Dictionary containing discovered data
         """
-        self.ui.show_phase_header("Discovery Phase", "Scanning environment and system...")
+        self.ui.show_phase_header(
+            "Discovery Phase", "Scanning environment and system..."
+        )
 
         discovered = {}
 
@@ -205,9 +215,13 @@ class ConfigurationManager:
             discovered["network"] = network_data
             conflicts = network_data.get("conflicts", [])
             if conflicts:
-                high_severity = len([c for c in conflicts if c.get("severity") == "high"])
+                high_severity = len(
+                    [c for c in conflicts if c.get("severity") == "high"]
+                )
                 if high_severity > 0:
-                    self.ui.show_warning(f"Found {high_severity} high-severity network conflicts")
+                    self.ui.show_warning(
+                        f"Found {high_severity} high-severity network conflicts"
+                    )
                 else:
                     self.ui.show_info(f"Found {len(conflicts)} network conflicts")
             else:
@@ -218,15 +232,21 @@ class ConfigurationManager:
             config_files = self._find_existing_configs()
             discovered["existing_configs"] = config_files
             if config_files:
-                self.ui.show_success(f"Found {len(config_files)} existing configuration file(s)")
+                self.ui.show_success(
+                    f"Found {len(config_files)} existing configuration file(s)"
+                )
             else:
                 self.ui.show_info("No existing configuration files found")
 
             # Generate and write enhanced defaults file
             self.ui.show_step("Generating enhanced defaults...")
             enhanced_defaults = self._generate_enhanced_defaults()
-            enhanced_defaults_path = self._write_enhanced_defaults_file(enhanced_defaults)
-            self.ui.show_success(f"Enhanced defaults written to: {enhanced_defaults_path}")
+            enhanced_defaults_path = self._write_enhanced_defaults_file(
+                enhanced_defaults
+            )
+            self.ui.show_success(
+                f"Enhanced defaults written to: {enhanced_defaults_path}"
+            )
 
             self.discovered_data = discovered
             logger.info("Discovery phase completed successfully")
@@ -238,7 +258,9 @@ class ConfigurationManager:
             self.ui.show_error(f"Discovery failed: {e}")
             raise
 
-    def run_tui_mapping_phase(self, enhanced_defaults_path: Optional[str] = None) -> str:
+    def run_tui_mapping_phase(
+        self, enhanced_defaults_path: Optional[str] = None
+    ) -> str:
         """
         Phase 1.5: TUI Defaults Mapping
         Transform rich enhanced defaults to simple TUI format.
@@ -261,10 +283,16 @@ class ConfigurationManager:
                 )
 
             if not Path(enhanced_defaults_path).exists():
-                raise ValueError(f"Enhanced defaults file not found: {enhanced_defaults_path}")
+                raise ValueError(
+                    f"Enhanced defaults file not found: {enhanced_defaults_path}"
+                )
 
-            self.ui.show_step(f"Loading enhanced defaults from {enhanced_defaults_path}...")
-            enhanced_defaults = self._load_enhanced_defaults_file(enhanced_defaults_path)
+            self.ui.show_step(
+                f"Loading enhanced defaults from {enhanced_defaults_path}..."
+            )
+            enhanced_defaults = self._load_enhanced_defaults_file(
+                enhanced_defaults_path
+            )
 
             # Transform to TUI format
             self.ui.show_step("Transforming to TUI-compatible format...")
@@ -288,7 +316,9 @@ class ConfigurationManager:
         Returns:
             Configuration object with collected values
         """
-        self.ui.show_phase_header("Interactive Collection", "Collecting configuration values...")
+        self.ui.show_phase_header(
+            "Interactive Collection", "Collecting configuration values..."
+        )
 
         try:
             # Initialize configuration with discovered defaults
@@ -317,7 +347,9 @@ class ConfigurationManager:
 
             # Execute main configuration layout
             self.ui.show_step("Collecting OpenProject configuration...")
-            flow_result = self.flow_engine.execute_flow("config_tui.layout", context=flow_variables)
+            flow_result = self.flow_engine.execute_flow(
+                "config_tui.layout", context=flow_variables
+            )
             config_data.update(flow_result)
 
             # Create configuration object
@@ -343,7 +375,9 @@ class ConfigurationManager:
             True if validation passes, False otherwise
         """
         if not self.configuration:
-            raise ValueError("No configuration to validate. Run collection phase first.")
+            raise ValueError(
+                "No configuration to validate. Run collection phase first."
+            )
 
         self.ui.show_phase_header("Validation Phase", "Validating configuration...")
 
@@ -489,13 +523,16 @@ class ConfigurationManager:
             Path to the updated configuration file
         """
         if not self.configuration:
-            raise ValueError("No configuration loaded. Load existing configuration first.")
+            raise ValueError(
+                "No configuration loaded. Load existing configuration first."
+            )
 
         self.ui.show_title("Update Configuration")
 
         # Run interactive collection with existing configuration as base
         updated_config = self.collector.collect_configuration(
-            initial_config=self.configuration, discovered_data=self.discovered_data or {}
+            initial_config=self.configuration,
+            discovered_data=self.discovered_data or {},
         )
 
         self.configuration = updated_config
@@ -507,7 +544,9 @@ class ConfigurationManager:
             if self.ui.confirm("Validation failed. Export anyway?"):
                 return self.run_export_phase()
             else:
-                raise ValueError("Configuration update cancelled due to validation errors")
+                raise ValueError(
+                    "Configuration update cancelled due to validation errors"
+                )
 
     def _find_existing_configs(self) -> List[str]:
         """Find existing configuration files in the project."""
@@ -550,7 +589,9 @@ class ConfigurationManager:
         # From system
         system_data = self.discovered_data.get("system", {})
         if system_data.get("hostname"):
-            defaults.setdefault("proxy", {})["domain"] = f"{system_data['hostname']}.local"
+            defaults.setdefault("proxy", {})[
+                "domain"
+            ] = f"{system_data['hostname']}.local"
 
         # Create configuration with intelligent defaults
         try:
@@ -585,7 +626,9 @@ class ConfigurationManager:
                 },
             )
 
-    def _flatten_enhanced_defaults(self, enhanced_defaults: Dict[str, Any]) -> Dict[str, Any]:
+    def _flatten_enhanced_defaults(
+        self, enhanced_defaults: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Flatten enhanced defaults structure for TUI consumption."""
         flattened = {}
 
@@ -642,7 +685,9 @@ class ConfigurationManager:
             "arch": platform_info.get("machine", "Unknown"),
             "hostname": platform_info.get("hostname", "unknown"),
             "memory_total_gb": hardware_info.get("memory", {}).get("total_gb", 0),
-            "memory_available_gb": hardware_info.get("memory", {}).get("available_gb", 0),
+            "memory_available_gb": hardware_info.get("memory", {}).get(
+                "available_gb", 0
+            ),
             "cpu_cores": hardware_info.get("cpu", {}).get("cores", 0),
             "cpu_model": hardware_info.get("cpu", {}).get("model", "Unknown"),
         }
@@ -655,7 +700,8 @@ class ConfigurationManager:
         return {
             "hostname": basic_info.get("hostname", "unknown"),
             "interfaces": [
-                iface.get("name", "unknown") for iface in network_data.get("interfaces", [])
+                iface.get("name", "unknown")
+                for iface in network_data.get("interfaces", [])
             ],
             "available_ports": port_analysis.get("available_ports", []),
             "recommended_ports": port_analysis.get("recommended_ports", {}),
@@ -675,7 +721,9 @@ class ConfigurationManager:
             "postgresql_detected": any(
                 "postgres" in c.get("image", "").lower() for c in containers
             ),
-            "mysql_detected": any("mysql" in c.get("image", "").lower() for c in containers),
+            "mysql_detected": any(
+                "mysql" in c.get("image", "").lower() for c in containers
+            ),
         }
 
     def _extract_storage_metadata(self, system_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -710,9 +758,7 @@ class ConfigurationManager:
         # Fall back to hostname + .local for local development
         elif hostname and hostname != "localhost":
             domain_value = f"{hostname}.local"
-            reason = (
-                f"Using detected hostname '{hostname}' with .local suffix for local development"
-            )
+            reason = f"Using detected hostname '{hostname}' with .local suffix for local development"
             confidence = "medium"
         else:
             domain_value = "openproject.local"
@@ -728,7 +774,9 @@ class ConfigurationManager:
 
     def _generate_port_default(self, network_data: Dict[str, Any]) -> Dict[str, Any]:
         """Generate intelligent port default."""
-        recommended_ports = network_data.get("port_analysis", {}).get("recommended_ports", {})
+        recommended_ports = network_data.get("port_analysis", {}).get(
+            "recommended_ports", {}
+        )
         conflicts = network_data.get("conflicts", [])
 
         if "web" in recommended_ports:
@@ -765,9 +813,7 @@ class ConfigurationManager:
             confidence = "high"
         elif total_gb >= 4:
             memory = "1GB"
-            reason = (
-                f"Detected {total_gb:.1f}GB system RAM, recommending conservative allocation (1GB)"
-            )
+            reason = f"Detected {total_gb:.1f}GB system RAM, recommending conservative allocation (1GB)"
             confidence = "medium"
         else:
             memory = "2GB"
@@ -792,7 +838,9 @@ class ConfigurationManager:
             confidence = "high"
         else:
             value = "container"
-            reason = "No existing database detected, recommending containerized PostgreSQL"
+            reason = (
+                "No existing database detected, recommending containerized PostgreSQL"
+            )
             confidence = "high"
 
         return {
@@ -943,7 +991,7 @@ class ConfigurationManager:
         else:
             # Fallback to output_dir for production mode
             tui_path = self.output_dir / "config_tui.defaults.yml"
-        
+
         tui_path.parent.mkdir(parents=True, exist_ok=True)
 
         with open(tui_path, "w") as f:
@@ -969,7 +1017,9 @@ class ConfigurationManager:
             f"Database: {configuration.database.adapter} on {configuration.database.host}:{configuration.database.port}"
         )
         self.ui.show_info(f"Domain: {configuration.proxy.domain}")
-        self.ui.show_info(f"SSL: {'Enabled' if configuration.proxy.ssl_enabled else 'Disabled'}")
+        self.ui.show_info(
+            f"SSL: {'Enabled' if configuration.proxy.ssl_enabled else 'Disabled'}"
+        )
 
         # Show URL configuration
         uri_namespace_enabled = getattr(configuration, "uri_namespace_enabled", False)
@@ -977,7 +1027,9 @@ class ConfigurationManager:
 
         if uri_namespace_enabled and uri_namespace:
             self.ui.show_info(f"Namespace: Enabled ({uri_namespace})")
-            self.ui.show_info(f"Access URL: https://{configuration.proxy.domain}{uri_namespace}")
+            self.ui.show_info(
+                f"Access URL: https://{configuration.proxy.domain}{uri_namespace}"
+            )
         else:
             self.ui.show_info("Namespace: Disabled")
             self.ui.show_info(f"Access URL: https://{configuration.proxy.domain}")

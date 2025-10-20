@@ -104,7 +104,9 @@ class OpenProjectConfigCollector:
                 config = self._transform_responses_to_config(user_responses)
 
                 # Validate using ConfigurationManager
-                validation_result = self.config_manager.validator.validate_configuration(config)
+                validation_result = (
+                    self.config_manager.validator.validate_configuration(config)
+                )
 
                 if not validation_result.is_valid:
                     logger.error("❌ Configuration validation failed:")
@@ -128,7 +130,9 @@ class OpenProjectConfigCollector:
         logger.info("🎉 Configuration collection complete!")
         return final_config
 
-    def _transform_responses_to_config(self, responses: Dict[str, Any]) -> Configuration:
+    def _transform_responses_to_config(
+        self, responses: Dict[str, Any]
+    ) -> Configuration:
         """Transform user responses to Configuration object."""
         import secrets
 
@@ -201,7 +205,9 @@ class OpenProjectConfigCollector:
 
         return Configuration(**config_data)
 
-    def _generate_simple_deploy_config(self, responses: Dict[str, Any]) -> Dict[str, Any]:
+    def _generate_simple_deploy_config(
+        self, responses: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Generate simple configuration for deploy-manager without full validation."""
         from datetime import datetime
 
@@ -254,7 +260,9 @@ class OpenProjectConfigCollector:
             "_raw_responses": responses,
         }
 
-    def test_flow(self, flow_name: str, mock_responses: Dict[str, Any]) -> Dict[str, Any]:
+    def test_flow(
+        self, flow_name: str, mock_responses: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Test flow execution with mock responses (for development/CI)."""
         logger.info(f"🧪 Testing flow: {flow_name}")
 
@@ -285,8 +293,7 @@ def main():
 
     # Configure logging for CLI usage
     logging.basicConfig(
-        level=logging.INFO,
-        format="%(message)s"  # Simple format for user-facing CLI
+        level=logging.INFO, format="%(message)s"  # Simple format for user-facing CLI
     )
 
     parser = argparse.ArgumentParser(description="OpenProject Configuration Collector")
@@ -337,7 +344,9 @@ def main():
         logger.info(f"  - User responses: outputs/{args.flow_name}_responses.json")
         logger.info(f"  - Final config: outputs/openproject_config.json")
         if args.skip_validation:
-            logger.warning("⚠️  Note: Validation was skipped - configuration is for testing only")
+            logger.warning(
+                "⚠️  Note: Validation was skipped - configuration is for testing only"
+            )
         logger.info("\n✅ Ready for deployment with deploy-manager!")
 
     except Exception as e:

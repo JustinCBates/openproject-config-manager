@@ -18,19 +18,9 @@ except ImportError:
     PathResolver = None
     PathResolutionError = None
 
-# === GENERATED: STEP_IMPORTS - DO NOT EDIT ===
-# Handle both relative imports (when called by parent) and absolute imports (when run standalone)
-if __name__ == '__main__':
-    # Running standalone - use absolute imports
-    sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-    from phases.phase_5_export.step_1_export_docker_compose.export_docker_compose import ExportDockerComposeStep
-    from phases.phase_5_export.step_2_export_env_file.export_env_file import ExportEnvFileStep
-    from phases.phase_5_export.step_3_export_manifest.export_manifest import ExportManifestStep
-else:
-    # When imported as module, use relative imports
-    from .step_1_export_docker_compose.export_docker_compose import ExportDockerComposeStep
-    from .step_2_export_env_file.export_env_file import ExportEnvFileStep
-    from .step_3_export_manifest.export_manifest import ExportManifestStep
+from phases.phase_5_export.step_1_export_docker_compose.export_docker_compose import ExportDockerComposeStep
+from phases.phase_5_export.step_2_export_env_file.export_env_file import ExportEnvFileStep
+from phases.phase_5_export.step_3_export_manifest.export_manifest import ExportManifestStep
 # === END GENERATED: STEP_IMPORTS ===
 
 # Infrastructure imports (preserved, not regenerated)

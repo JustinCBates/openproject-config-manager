@@ -17,21 +17,10 @@ except ImportError:
     PathResolver = None
     PathResolutionError = None
 
-# === GENERATED: STEP_IMPORTS - DO NOT EDIT ===
-# Handle both relative imports (when called by parent) and absolute imports (when run standalone)
-if __name__ == '__main__':
-    # Running standalone - use absolute imports
-    sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-    from phases.phase_1_discovery.step_0_discovery_prompt.discovery_prompt import DiscoveryPromptStep
-    from phases.phase_1_discovery.step_1_env_discovery.env_discovery import EnvDiscoveryStep
-    from phases.phase_1_discovery.step_2_system_discovery.system_discovery import SystemDiscoveryStep
-    from phases.phase_1_discovery.step_3_defaults_generation.defaults_generation import DefaultsGenerationStep
-else:
-    # When imported as module, use relative imports
-    from .step_0_discovery_prompt.discovery_prompt import DiscoveryPromptStep
-    from .step_1_env_discovery.env_discovery import EnvDiscoveryStep
-    from .step_2_system_discovery.system_discovery import SystemDiscoveryStep
-    from .step_3_defaults_generation.defaults_generation import DefaultsGenerationStep
+from phases.phase_1_discovery.step_0_discovery_prompt.discovery_prompt import DiscoveryPromptStep
+from phases.phase_1_discovery.step_1_env_discovery.env_discovery import EnvDiscoveryStep
+from phases.phase_1_discovery.step_2_system_discovery.system_discovery import SystemDiscoveryStep
+from phases.phase_1_discovery.step_3_defaults_generation.defaults_generation import DefaultsGenerationStep
 # === END GENERATED: STEP_IMPORTS ===
 
 # Infrastructure imports (preserved, not regenerated)

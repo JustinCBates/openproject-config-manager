@@ -17,16 +17,11 @@ except ImportError:
     PathResolver = None
     PathResolutionError = None
 
-# === GENERATED: STEP_IMPORTS - DO NOT EDIT ===
-# Handle both relative imports (when called by parent) and absolute imports (when run standalone)
-if __name__ == '__main__':
-    # Running standalone - use absolute imports
-    sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-    from phases.phase_2_tui_mapping.step_1_transform_defaults.transform_defaults import TransformDefaultsStep
-else:
-    # When imported as module, use relative imports
-    from .step_1_transform_defaults.transform_defaults import TransformDefaultsStep
-# === END GENERATED: STEP_IMPORTS ===
+
+# Always use package import
+from phases.phase_2_tui_mapping.step_1_transform_defaults.transform_defaults import (
+    TransformDefaultsStep,
+)
 
 # Infrastructure imports (preserved, not regenerated)
 # Add phase-specific infrastructure imports here:
@@ -48,78 +43,81 @@ class TuiMappingPhase:
     """
     TUI Defaults Mapping
     Status: IMPLEMENTED
-    
+
     Transform rich enhanced defaults to simple TUI format
-    
+
     Artifacts Consumed: enhanced_defaults_file, defaults_mapping_config
     Artifacts Produced: tui_defaults_file
     """
-    
+
     def __init__(
         self,
         project_root: Path,
         ui=None,
-        mode: str = 'hardcoded',
+        mode: str = "hardcoded",
         spec_file: Optional[Path] = None,
-        phase_spec: Optional[Dict[str, Any]] = None
+        phase_spec: Optional[Dict[str, Any]] = None,
     ):
         self.project_root = project_root
         self.ui = ui
         self.mode = mode
-        self.spec_file = spec_file or self.project_root / "design_specs/control_flows.yml"
+        self.spec_file = (
+            spec_file or self.project_root / "design_specs/control_flows.yml"
+        )
         self.phase_spec = phase_spec
         self.phase_dir = project_root / "phases/phase_2_tui_mapping"
-        
+
         # Initialize PathResolver for artifact and unit resolution
         if PathResolver:
             try:
                 self.path_resolver = PathResolver.from_execution_context(__file__)
-                logger.debug(f"PathResolver initialized: {self.path_resolver.get_project_root()}")
+                logger.debug(
+                    f"PathResolver initialized: {self.path_resolver.get_project_root()}"
+                )
             except Exception as e:
                 logger.warning(f"Could not initialize PathResolver: {e}")
                 self.path_resolver = None
         else:
             self.path_resolver = None
-        
+
     def _execute_dynamic(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Execute phase using YAML specification (dynamic mode).
-        
+
         Reads steps from phase_spec['steps'] and executes them in sequence.
         """
         if not self.phase_spec:
             logger.warning("No phase spec available, falling back to hardcoded mode")
             return self._execute_hardcoded(context)
-        
+
         logger.info("Using YAML-driven execution")
-        result = {'artifacts': {}}
-        
-        for step_spec in self.phase_spec.get('steps', []):
-            step_id = step_spec['step_id']
-            step_status = step_spec.get('status', 'PLANNED')
-            
-            if step_status in ['PLANNED', 'SKIPPED']:
+        result = {"artifacts": {}}
+
+        for step_spec in self.phase_spec.get("steps", []):
+            step_id = step_spec["step_id"]
+            step_status = step_spec.get("status", "PLANNED")
+
+            if step_status in ["PLANNED", "SKIPPED"]:
                 logger.info(f"Skipping step {step_id} (status: {step_status})")
                 continue
-            
+
             logger.info(f"Executing step: {step_id}")
-            
-            if 'units' in step_spec and step_spec['units']:
+
+            if "units" in step_spec and step_spec["units"]:
                 step_result = self._execute_step_with_units(step_spec, context)
             else:
                 step_result = self._execute_step_traditional(step_spec, context)
-            
+
             if step_result:
                 context.update(step_result.get("artifacts", {}))
                 result["artifacts"].update(step_result.get("artifacts", {}))
-        
-        return self._build_result(result, context)
 
+        return self._build_result(result, context)
 
     def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Execute phase.
-        
+
         Supports two execution modes:
         1. hardcoded (default): Uses static step execution
         2. dynamic: Reads steps from YAML
@@ -132,77 +130,79 @@ class TuiMappingPhase:
     def _execute_hardcoded(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Hardcoded execution mode (original implementation).
-        
+
         Execute TUI Defaults Mapping.
-        
+
         Args:
             context: Execution context with consumed artifacts:
                 - enhanced_defaults_file: Path to enhanced defaults from Phase 1
                 - enhanced_defaults: Enhanced defaults structure
-            
+
         Returns:
             Dict with produced artifacts:
                 - tui_defaults_file: Path to transformed defaults file
                 - tui_defaults: Transformed defaults structure
         """
         if self.ui:
-            self.ui.show_phase_header("TUI Defaults Mapping", "Transform rich enhanced defaults to simple TUI format")
-        
+            self.ui.show_phase_header(
+                "TUI Defaults Mapping",
+                "Transform rich enhanced defaults to simple TUI format",
+            )
+
         logger.info("Executing TUI Defaults Mapping")
-        
-        result = {'artifacts': {}}
-        
+
+        result = {"artifacts": {}}
+
         # === GENERATED: STEP_EXECUTION - DO NOT EDIT ===
-# Step 1: Transform rich enhanced defaults to simple TUI-compatible format
-        logger.info("Step 1: Transform rich enhanced defaults to simple TUI-compatible format")
+        # Step 1: Transform rich enhanced defaults to simple TUI-compatible format
+        logger.info(
+            "Step 1: Transform rich enhanced defaults to simple TUI-compatible format"
+        )
         step_1 = TransformDefaultsStep(self.project_root, self.ui)
         step_result = step_1.execute(context)
         context.update(step_result.get("artifacts", {}))
         result["artifacts"].update(step_result.get("artifacts", {}))
-        
-# === END GENERATED: STEP_EXECUTION ===
-        
+
+        # === END GENERATED: STEP_EXECUTION ===
+
         logger.info("TUI Defaults Mapping completed successfully")
-        
+
         # Build result from collected artifacts
         return {
-            'artifacts': result['artifacts'],
-            'tui_defaults_file': context.get('tui_defaults_file'),
-            'tui_defaults': context.get('tui_defaults'),
-            'transformation_summary': context.get('transformation_summary', {})
+            "artifacts": result["artifacts"],
+            "tui_defaults_file": context.get("tui_defaults_file"),
+            "tui_defaults": context.get("tui_defaults"),
+            "transformation_summary": context.get("transformation_summary", {}),
         }
 
-
     def _execute_step_with_units(
-        self,
-        step_spec: Dict[str, Any],
-        context: Dict[str, Any]
+        self, step_spec: Dict[str, Any], context: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Execute a step by dynamically loading and calling units from YAML.
-        
+
         Args:
             step_spec: Step specification from YAML
             context: Execution context
-            
+
         Returns:
             Dict with step results
         """
         import importlib
-        
-        step_id = step_spec['step_id']
-        units = step_spec.get('units', [])
-        
+
+        step_id = step_spec["step_id"]
+        units = step_spec.get("units", [])
+
         logger.info(f"Step {step_id} has {len(units)} units")
-        
+
         step_results = {}
-        
+
         for unit_spec in units:
-            unit_id = unit_spec['unit_id']
-            library = unit_spec['library']
-            class_name = unit_spec['class']
-            method_name = unit_spec['method']
-            
+            unit_id = unit_spec["unit_id"]
+            library = unit_spec["library"]
+            class_name = unit_spec["class"]
+            method_name = unit_spec["method"]
+
             try:
                 # Dynamic import: from phases.libraries.{library} import {class}
                 # Use PathResolver if available for library path resolution
@@ -214,171 +214,184 @@ class TuiMappingPhase:
                     module_path = f"phases.libraries.{library}"
                 module = importlib.import_module(module_path)
                 unit_class = getattr(module, class_name)
-                
+
                 # Instantiate and call method
                 unit_instance = unit_class()
                 method = getattr(unit_instance, method_name)
                 result = method(context)
-                
+
                 logger.info(f"Unit {unit_id} executed successfully")
                 step_results[unit_id] = result
-                
+
             except (ImportError, AttributeError) as e:
                 logger.warning(f"Could not load unit {unit_id}: {e}")
                 # Mock execution for unimplemented units
                 step_results[unit_id] = self._mock_unit_execution(unit_spec)
             except Exception as e:
                 logger.error(f"Error executing unit {unit_id}: {e}")
-                step_results[unit_id] = {'error': str(e), 'status': 'failed'}
-        
-        return {'artifacts': step_results}
-    
+                step_results[unit_id] = {"error": str(e), "status": "failed"}
+
+        return {"artifacts": step_results}
+
     def _execute_step_traditional(
-        self,
-        step_spec: Dict[str, Any],
-        context: Dict[str, Any]
+        self, step_spec: Dict[str, Any], context: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Execute a step using the traditional Step class approach.
-        
+
         Falls back to importing and calling the Step class if no units defined.
-        
+
         Args:
             step_spec: Step specification from YAML
             context: Execution context
-            
+
         Returns:
             Dict with step results
         """
-        step_id = step_spec['step_id']
-        
+        step_id = step_spec["step_id"]
+
         # Try to dynamically load the step class
         # This is a fallback - ideally all phases should use the step_class_map
         logger.warning(f"Step {step_id} has no units, attempting traditional execution")
-        
+
         # Return empty result - the step should be handled by _execute_hardcoded
-        return {'artifacts': {}}
-    
+        return {"artifacts": {}}
+
     def _mock_unit_execution(self, unit_spec: Dict[str, Any]) -> Dict[str, Any]:
         """
         Mock execution for units that don't exist yet.
-        
+
         Args:
             unit_spec: Unit specification from YAML
-            
+
         Returns:
             Mock execution result
         """
-        logger.info(f"MOCK: Executing {unit_spec['library']}.{unit_spec['class']}.{unit_spec['method']}()")
+        logger.info(
+            f"MOCK: Executing {unit_spec['library']}.{unit_spec['class']}.{unit_spec['method']}()"
+        )
         return {
-            'status': 'mocked',
-            'unit': unit_spec['unit_id'],
-            'message': f"Mock execution of {unit_spec['class']}.{unit_spec['method']}()"
+            "status": "mocked",
+            "unit": unit_spec["unit_id"],
+            "message": f"Mock execution of {unit_spec['class']}.{unit_spec['method']}()",
         }
-    
-    def _build_result(self, result: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+
+    def _build_result(
+        self, result: Dict[str, Any], context: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Build final result dictionary using PathResolver for artifact paths.
-        
+
         Args:
             result: Accumulated results
             context: Execution context
-            
+
         Returns:
             Final result dictionary with resolved paths
         """
-        final_result = {'artifacts': result.get('artifacts', {})}
-        
+        final_result = {"artifacts": result.get("artifacts", {})}
+
         # Add all context keys to result
         for key, value in context.items():
             if key not in final_result:
                 final_result[key] = value
-        
+
         # Use PathResolver to validate artifact paths if available
         if self.path_resolver:
-            for artifact_id in final_result.get('artifacts', {}).keys():
+            for artifact_id in final_result.get("artifacts", {}).keys():
                 try:
                     # Validate artifact is accessible
                     accessible = self.path_resolver.validate_artifact_accessible(
-                        artifact_id, 
-                        mode='write'
+                        artifact_id, mode="write"
                     )
                     if accessible:
-                        logger.debug(f"Artifact '{artifact_id}' path validated by PathResolver")
+                        logger.debug(
+                            f"Artifact '{artifact_id}' path validated by PathResolver"
+                        )
                 except Exception as e:
                     logger.debug(f"Could not validate artifact '{artifact_id}': {e}")
-        
+
         return final_result
+
 
 def main():
     """Standalone entry point for testing Phase 2: TUI Defaults Mapping."""
     import argparse
     import yaml
-    
+
     parser = argparse.ArgumentParser(description="Phase 2: TUI Defaults Mapping")
-    parser.add_argument('--enhanced-defaults', required=True, help='Path to enhanced_defaults.yml from Phase 1')
-    parser.add_argument('--output-dir', help='Output directory', default=None)
-    parser.add_argument('--verbose', action='store_true', help='Enable verbose logging')
-    parser.add_argument('--dynamic', action='store_true', help='Use YAML-driven execution mode')
-    
+    parser.add_argument(
+        "--enhanced-defaults",
+        required=True,
+        help="Path to enhanced_defaults.yml from Phase 1",
+    )
+    parser.add_argument("--output-dir", help="Output directory", default=None)
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
+    parser.add_argument(
+        "--dynamic", action="store_true", help="Use YAML-driven execution mode"
+    )
+
     args = parser.parse_args()
-    
+
     # Setup logging
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
-    
+
     # Setup paths
     phase_dir = Path(__file__).parent
-    project_root = phase_dir.parent.parent  # Go up 2 levels: phase_2_tui_mapping -> phases -> config-manager
-    
+    project_root = (
+        phase_dir.parent.parent
+    )  # Go up 2 levels: phase_2_tui_mapping -> phases -> config-manager
+
     try:
         # Initialize phase
-        mode = 'dynamic' if args.dynamic else 'hardcoded'
+        mode = "dynamic" if args.dynamic else "hardcoded"
         phase = TuiMappingPhase(project_root=project_root, ui=None, mode=mode)
-        
+
         # Load enhanced defaults
         enhanced_defaults_path = Path(args.enhanced_defaults)
         if not enhanced_defaults_path.exists():
             print(f"❌ Enhanced defaults file not found: {enhanced_defaults_path}")
             return 1
-        
-        with open(enhanced_defaults_path, 'r') as f:
+
+        with open(enhanced_defaults_path, "r") as f:
             enhanced_defaults = yaml.safe_load(f)
-        
+
         # Build context
         context = {
-            'enhanced_defaults_file': str(enhanced_defaults_path),
-            'enhanced_defaults': enhanced_defaults
+            "enhanced_defaults_file": str(enhanced_defaults_path),
+            "enhanced_defaults": enhanced_defaults,
         }
-        
+
         # Execute phase
         logger.info("Executing TUI Defaults Mapping Phase")
         result = phase.execute(context)
-        
+
         print("\n" + "=" * 70)
         print("✅ PHASE 2 COMPLETE: TUI Defaults Mapping")
         print("=" * 70)
         print(f"\n📊 Phase Summary:")
         print(f"  • tui_defaults_file: {result.get('tui_defaults_file', 'N/A')}")
-        
-        if 'transformation_summary' in result:
-            summary = result['transformation_summary']
+
+        if "transformation_summary" in result:
+            summary = result["transformation_summary"]
             print(f"\n📝 Transformation Summary:")
             print(f"  • Total defaults: {summary.get('total_defaults', 0)}")
             print(f"  • Transformed: {summary.get('transformed', 0)}")
-        
+
         print(f"\n✅ Ready for Phase 3: Collection")
-        
+
         return 0
-        
+
     except Exception as e:
         print(f"\n❌ Phase 2 failed: {e}")
         import traceback
+
         traceback.print_exc()
         return 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     exit(main())

@@ -10,125 +10,120 @@ from typing import Dict, Any
 import logging
 import sys
 
-# Conditional imports to handle both module context and standalone execution
-if __name__ == '__main__':
-    # When running as standalone script, add parent to path for absolute imports
-    sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
-    from phases.libraries.probing import SystemDiscovery, DockerDiscovery, NetworkDiscovery
-else:
-    # When imported as module, use library imports
-    from phases.libraries.probing import SystemDiscovery, DockerDiscovery, NetworkDiscovery
+
+from phases.libraries.probing import SystemDiscovery, DockerDiscovery, NetworkDiscovery
 
 logger = logging.getLogger(__name__)
 
 
-def execute_system_discovery(context: Dict[str, Any], phase_dir: Path) -> Dict[str, Any]:
+def execute_system_discovery(
+    context: Dict[str, Any], phase_dir: Path
+) -> Dict[str, Any]:
     """
     System Discovery
     Status: IMPLEMENTED
-    
+
     Analyze system resources, ports, services
-    
+
     Args:
         context: Execution context
         phase_dir: Phase directory path
-        
+
     Returns:
         Dict with step results including system_data, docker_data, network_data
     """
     logger.info("Executing step: System Discovery")
-    
+
     try:
         # Initialize discovery modules
         system_discovery = SystemDiscovery()
         docker_discovery = DockerDiscovery()
         network_discovery = NetworkDiscovery()
-        
+
         # Run discoveries
         logger.info("Running system discovery...")
         system_data = system_discovery.discover()
-        
+
         logger.info("Running Docker discovery...")
         docker_data = docker_discovery.discover()
-        
+
         logger.info("Running network discovery...")
         network_data = network_discovery.discover()
-        
-        logger.info(f"System discovery completed: CPU={system_data.get('cpu', {}).get('count')} cores, "
-                   f"Memory={system_data.get('memory', {}).get('total_gb')}GB, "
-                   f"Docker={docker_data.get('docker_available')}")
-        
+
+        logger.info(
+            f"System discovery completed: CPU={system_data.get('cpu', {}).get('count')} cores, "
+            f"Memory={system_data.get('memory', {}).get('total_gb')}GB, "
+            f"Docker={docker_data.get('docker_available')}"
+        )
+
         result = {
-            'step': 'system_discovery',
-            'status': 'completed',
-            'system_data': system_data,
-            'docker_data': docker_data,
-            'network_data': network_data
+            "step": "system_discovery",
+            "status": "completed",
+            "system_data": system_data,
+            "docker_data": docker_data,
+            "network_data": network_data,
         }
-        
+
         logger.info("Step System Discovery completed successfully")
         return result
-        
+
     except Exception as e:
         logger.error(f"System discovery failed: {e}")
-        return {
-            'step': 'system_discovery',
-            'status': 'failed',
-            'error': str(e)
-        }
+        return {"step": "system_discovery", "status": "failed", "error": str(e)}
 
 
 def main():
     """Standalone entry point for testing this step."""
     import argparse
-    
+
     parser = argparse.ArgumentParser(description="System Discovery")
-    parser.add_argument('--output-dir', help='Output directory', default=None)
-    parser.add_argument('--verbose', action='store_true', help='Enable verbose logging')
-    
+    parser.add_argument("--output-dir", help="Output directory", default=None)
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
+
     args = parser.parse_args()
-    
+
     # Setup logging
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
-    
+
     # Setup paths
     phase_dir = Path(__file__).parent.parent
-    
+
     try:
         # Build context from CLI args
         context = {}
-        
+
         # Execute step
         result = execute_system_discovery(context, phase_dir)
-        
+
         print("\n" + "=" * 70)
         print(f"✅ Step completed: {result.get('status', 'unknown')}")
         print("=" * 70)
         print(f"\n📊 System Discovery Results:")
-        
-        if result.get('status') == 'completed':
-            system = result.get('system_data', {})
-            docker = result.get('docker_data', {})
-            network = result.get('network_data', {})
-            
+
+        if result.get("status") == "completed":
+            system = result.get("system_data", {})
+            docker = result.get("docker_data", {})
+            network = result.get("network_data", {})
+
             print(f"  • CPU cores: {system.get('cpu', {}).get('count', 'N/A')}")
             print(f"  • Memory: {system.get('memory', {}).get('total_gb', 'N/A')} GB")
             print(f"  • Docker available: {docker.get('docker_available', False)}")
             print(f"  • Network interfaces: {len(network.get('interfaces', []))}")
-        
-        return 0 if result.get('status') == 'completed' else 1
-        
+
+        return 0 if result.get("status") == "completed" else 1
+
     except Exception as e:
         print(f"\n❌ Step failed: {e}")
         import traceback
+
         traceback.print_exc()
         return 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     exit(main())
 
 
@@ -143,26 +138,28 @@ from .system_discovery import execute_system_discovery
 
 class SystemDiscoveryStep:
     """Wrapper class for system_discovery step."""
-    
+
     def __init__(self, project_root: Path, ui=None):
         self.project_root = project_root
         self.ui = ui
         self.phase_dir = project_root / "phases/phase_1_discovery"
-    
+
     def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Execute system_discovery step.
-        
+
         Args:
             context: Execution context
-            
+
         Returns:
             Dict with artifacts
         """
         # Call existing function
         result_data = execute_system_discovery(context, self.phase_dir)
-        
+
         # Return in expected format
         return {
-            "artifacts": result_data if isinstance(result_data, dict) else {"data": result_data}
+            "artifacts": (
+                result_data if isinstance(result_data, dict) else {"data": result_data}
+            )
         }

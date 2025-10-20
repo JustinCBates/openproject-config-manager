@@ -40,7 +40,9 @@ class IntelligentDefaultsEngine:
             defaults_path = layout_dir / defaults_file
 
             if defaults_path.exists():
-                self.console.print(f"🔍 Loading intelligent defaults from: {defaults_file}")
+                self.console.print(
+                    f"🔍 Loading intelligent defaults from: {defaults_file}"
+                )
                 with open(defaults_path, "r") as f:
                     probe_defaults = yaml.safe_load(f)
                 self._show_probe_info(probe_defaults)
@@ -64,7 +66,11 @@ Network: {metadata.get('network_info', {}).get('public_ip', 'No public IP')}
 Generated: {metadata.get('generated_at', 'Unknown time')}"""
 
             self.console.print(
-                Panel(info_text, title="🧠 Intelligent Defaults Loaded", border_style="blue")
+                Panel(
+                    info_text,
+                    title="🧠 Intelligent Defaults Loaded",
+                    border_style="blue",
+                )
             )
 
     def resolve_default_value(self, step: Dict[str, Any]) -> Dict[str, Any]:
@@ -79,7 +85,9 @@ Generated: {metadata.get('generated_at', 'Unknown time')}"""
                     return {
                         "value": dynamic_rule["value"],
                         "source": "dynamic",
-                        "reason": dynamic_rule.get("reason", "Based on previous selections"),
+                        "reason": dynamic_rule.get(
+                            "reason", "Based on previous selections"
+                        ),
                         "condition": condition,
                     }
 
@@ -96,7 +104,11 @@ Generated: {metadata.get('generated_at', 'Unknown time')}"""
 
         # 3. Fall back to static default in layout
         if "default" in step:
-            return {"value": step["default"], "source": "static", "reason": "Layout default"}
+            return {
+                "value": step["default"],
+                "source": "static",
+                "reason": "Layout default",
+            }
 
         # 4. Type-based defaults
         type_defaults = {"text": "", "password": "", "confirm": True, "select": None}
@@ -139,7 +151,11 @@ Generated: {metadata.get('generated_at', 'Unknown time')}"""
         icon = layout_data.get("icon", "🔧")
 
         self.console.print(
-            Panel(f"{icon} {title}\n{description}", title="Flow Start", border_style="blue")
+            Panel(
+                f"{icon} {title}\n{description}",
+                title="Flow Start",
+                border_style="blue",
+            )
         )
 
         steps = layout_data.get("steps", [])
@@ -154,9 +170,13 @@ Generated: {metadata.get('generated_at', 'Unknown time')}"""
             # Skip info steps and conditional steps for this demo
             if step_type == "info":
                 self.console.print(
-                    Panel(step.get("message", ""), title=step.get("title", "Information"))
+                    Panel(
+                        step.get("message", ""), title=step.get("title", "Information")
+                    )
                 )
-                questionary.press_any_key_to_continue("Press any key to continue...").ask()
+                questionary.press_any_key_to_continue(
+                    "Press any key to continue..."
+                ).ask()
                 continue
 
             if "condition" in step:
@@ -171,9 +191,7 @@ Generated: {metadata.get('generated_at', 'Unknown time')}"""
             source_info = f"💡 {instruction}"
             if default_info["source"] != "type":
                 source_emoji = {"dynamic": "🔄", "probe": "🧠", "static": "📋"}
-                source_info += (
-                    f"\n{source_emoji.get(default_info['source'], '🔧')} {default_info['reason']}"
-                )
+                source_info += f"\n{source_emoji.get(default_info['source'], '🔧')} {default_info['reason']}"
 
             # Build step display
             step_display = f"Step {i+1}/{len(steps)}: {message}"
@@ -183,14 +201,17 @@ Generated: {metadata.get('generated_at', 'Unknown time')}"""
             try:
                 if step_type == "text":
                     response = questionary.text(
-                        step_display, default=str(default_value) if default_value else ""
+                        step_display,
+                        default=str(default_value) if default_value else "",
                     ).ask()
 
                 elif step_type == "password":
                     response = questionary.password(step_display).ask()
 
                 elif step_type == "confirm":
-                    response = questionary.confirm(step_display, default=bool(default_value)).ask()
+                    response = questionary.confirm(
+                        step_display, default=bool(default_value)
+                    ).ask()
 
                 elif step_type == "select":
                     choices = step.get("choices", [])
@@ -199,7 +220,9 @@ Generated: {metadata.get('generated_at', 'Unknown time')}"""
                         if isinstance(choice, str):
                             choice_list.append(choice)
                         elif isinstance(choice, dict):
-                            choice_list.append(choice.get("name", choice.get("value", str(choice))))
+                            choice_list.append(
+                                choice.get("name", choice.get("value", str(choice)))
+                            )
 
                     response = questionary.select(
                         step_display,
@@ -244,7 +267,9 @@ if __name__ == "__main__":
     responses = engine.run_flow_with_intelligent_defaults(sys.argv[1])
 
     if responses:
-        print(f"\nCompleted with {len(responses)} responses using intelligent defaults!")
+        print(
+            f"\nCompleted with {len(responses)} responses using intelligent defaults!"
+        )
         for key, value in responses.items():
             print(f"  {key}: {value}")
     else:
