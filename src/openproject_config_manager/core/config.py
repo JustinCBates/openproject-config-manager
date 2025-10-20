@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class ConfigurationVariable(BaseModel):
@@ -21,7 +21,8 @@ class ConfigurationVariable(BaseModel):
     choices: Optional[List[str]] = Field(None, description="Valid choices if limited")
     depends_on: Optional[List[str]] = Field(None, description="Dependencies on other variables")
 
-    @validator("name")
+    @field_validator("name")
+    @classmethod
     def validate_name(cls, v):
         """Ensure variable name is valid."""
         if not v or not v.replace("_", "").replace("-", "").isalnum():
@@ -48,7 +49,10 @@ class ConfigurationVariable(BaseModel):
 class DatabaseConfig(BaseModel):
     """Database configuration section."""
 
-    adapter: str = Field(default="postgresql", choices=["postgresql", "mysql"])
+    adapter: str = Field(
+        default="postgresql",
+        json_schema_extra={"choices": ["postgresql", "mysql"]}
+    )
     host: str = Field(default="db")
     port: int = Field(default=5432)
     name: str = Field(default="openproject")
@@ -56,7 +60,8 @@ class DatabaseConfig(BaseModel):
     password: str = Field(..., description="Database password")
     encoding: str = Field(default="utf8")
 
-    @validator("port")
+    @field_validator("port")
+    @classmethod
     def validate_port(cls, v):
         if not 1 <= v <= 65535:
             raise ValueError("Port must be between 1 and 65535")
@@ -75,7 +80,8 @@ class ProxyConfig(BaseModel):
     lets_encrypt_email: Optional[str] = Field(None)
     reverse_proxy_enabled: bool = Field(default=True)
 
-    @validator("domain")
+    @field_validator("domain")
+    @classmethod
     def validate_domain(cls, v):
         if not v or "." not in v:
             raise ValueError("Domain must be a valid domain name")
@@ -92,7 +98,8 @@ class StorageConfig(BaseModel):
     backup_retention_days: int = Field(default=30)
     backup_location: str = Field(default="./backups")
 
-    @validator("backup_retention_days")
+    @field_validator("backup_retention_days")
+    @classmethod
     def validate_retention(cls, v):
         if v < 1:
             raise ValueError("Backup retention must be at least 1 day")
@@ -104,7 +111,10 @@ class Configuration(BaseModel):
 
     # Core OpenProject Settings
     secret_key_base: str = Field(..., description="OpenProject secret key")
-    rails_env: str = Field(default="production", choices=["production", "development"])
+    rails_env: str = Field(
+        default="production",
+        json_schema_extra={"choices": ["production", "development"]}
+    )
     rails_cache_store: str = Field(default="memcache")
 
     # Database Configuration
@@ -118,7 +128,8 @@ class Configuration(BaseModel):
 
     # Email Configuration
     email_delivery_method: str = Field(
-        default="smtp", choices=["smtp", "sendmail", "letter_opener"]
+        default="smtp",
+        json_schema_extra={"choices": ["smtp", "sendmail", "letter_opener"]}
     )
     smtp_address: Optional[str] = Field(None)
     smtp_port: Optional[int] = Field(default=587)
@@ -141,21 +152,26 @@ class Configuration(BaseModel):
     session_cookie_secure: bool = Field(default=True)
 
     # Feature Flags
-    attachments_storage: str = Field(default="file", choices=["file", "fog"])
+    attachments_storage: str = Field(
+        default="file",
+        json_schema_extra={"choices": ["file", "fog"]}
+    )
     fog_credentials: Optional[Dict[str, Any]] = Field(None)
 
     # Logging
-    log_level: str = Field(default="info", choices=["debug", "info", "warn", "error"])
+    log_level: str = Field(
+        default="info",
+        json_schema_extra={"choices": ["debug", "info", "warn", "error"]}
+    )
     rails_log_to_stdout: bool = Field(default=True)
 
     # Custom Variables (for extensions)
     custom_variables: Dict[str, str] = Field(default_factory=dict)
 
-    class Config:
-        """Pydantic configuration."""
-
-        extra = "allow"  # Allow additional fields
-        validate_assignment = True
+    model_config = ConfigDict(
+        extra="allow",  # Allow additional fields
+        validate_assignment=True
+    )
 
     def to_cfg_format(self) -> str:
         """Export configuration to .cfg file format."""
