@@ -8,14 +8,10 @@ Ask user whether to use automatic system discovery or manual configuration
 This step uses TUI Form Engine for interactive user input.
 """
 
+
 from pathlib import Path
 from typing import Dict, Any
 import logging
-import sys
-
-# Import TUI Form Engine
-tui_path = Path(__file__).parent.parent.parent.parent.parent / 'tui-form-designer' / 'src'
-sys.path.insert(0, str(tui_path))
 from src.openproject_config_manager.tui_adapter import FormRenderer
 
 logger = logging.getLogger(__name__)
