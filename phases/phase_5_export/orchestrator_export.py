@@ -18,9 +18,16 @@ except ImportError:
     PathResolver = None
     PathResolutionError = None
 
-from phases.phase_5_export.step_1_export_docker_compose.export_docker_compose import ExportDockerComposeStep
-from phases.phase_5_export.step_2_export_env_file.export_env_file import ExportEnvFileStep
-from phases.phase_5_export.step_3_export_manifest.export_manifest import ExportManifestStep
+from phases.phase_5_export.step_1_export_docker_compose.export_docker_compose import (
+    ExportDockerComposeStep,
+)
+from phases.phase_5_export.step_2_export_env_file.export_env_file import (
+    ExportEnvFileStep,
+)
+from phases.phase_5_export.step_3_export_manifest.export_manifest import (
+    ExportManifestStep,
+)
+
 # === END GENERATED: STEP_IMPORTS ===
 
 # Infrastructure imports (preserved, not regenerated)
@@ -43,30 +50,37 @@ class ExportPhase:
     """
     Export Phase
     Status: IMPLEMENTED
-    
+
     Export final configuration files for deployment
-    
+
     Artifacts Consumed: validated_configuration
     Artifacts Produced: docker_compose_file, env_file, manifest_file
     """
-    
-    def __init__(self, project_root: Path, ui=None,
-        mode: str = 'hardcoded',
+
+    def __init__(
+        self,
+        project_root: Path,
+        ui=None,
+        mode: str = "hardcoded",
         spec_file: Optional[Path] = None,
-        phase_spec: Optional[Dict[str, Any]] = None
+        phase_spec: Optional[Dict[str, Any]] = None,
     ):
         self.project_root = project_root
         self.ui = ui
         self.mode = mode
-        self.spec_file = spec_file or self.project_root / "design_specs/control_flows.yml"
+        self.spec_file = (
+            spec_file or self.project_root / "design_specs/control_flows.yml"
+        )
         self.phase_spec = phase_spec
         self.phase_dir = project_root / "phases/phase_5_export"
-        
+
         # Initialize PathResolver for artifact and unit resolution
         if PathResolver:
             try:
                 self.path_resolver = PathResolver.from_execution_context(__file__)
-                logger.debug(f"PathResolver initialized: {self.path_resolver.get_project_root()}")
+                logger.debug(
+                    f"PathResolver initialized: {self.path_resolver.get_project_root()}"
+                )
             except Exception as e:
                 logger.warning(f"Could not initialize PathResolver: {e}")
                 self.path_resolver = None
@@ -74,46 +88,45 @@ class ExportPhase:
             self.path_resolver = None
         # Output to top-level phases/outputs/ for deploy-manager
         self.export_dir = project_root / "phases/outputs"
-        
+
     def _execute_dynamic(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Execute phase using YAML specification (dynamic mode).
-        
+
         Reads steps from phase_spec['steps'] and executes them in sequence.
         """
         if not self.phase_spec:
             logger.warning("No phase spec available, falling back to hardcoded mode")
             return self._execute_hardcoded(context)
-        
+
         logger.info("Using YAML-driven execution")
-        result = {'artifacts': {}}
-        
-        for step_spec in self.phase_spec.get('steps', []):
-            step_id = step_spec['step_id']
-            step_status = step_spec.get('status', 'PLANNED')
-            
-            if step_status in ['PLANNED', 'SKIPPED']:
+        result = {"artifacts": {}}
+
+        for step_spec in self.phase_spec.get("steps", []):
+            step_id = step_spec["step_id"]
+            step_status = step_spec.get("status", "PLANNED")
+
+            if step_status in ["PLANNED", "SKIPPED"]:
                 logger.info(f"Skipping step {step_id} (status: {step_status})")
                 continue
-            
+
             logger.info(f"Executing step: {step_id}")
-            
-            if 'units' in step_spec and step_spec['units']:
+
+            if "units" in step_spec and step_spec["units"]:
                 step_result = self._execute_step_with_units(step_spec, context)
             else:
                 step_result = self._execute_step_traditional(step_spec, context)
-            
+
             if step_result:
                 context.update(step_result.get("artifacts", {}))
                 result["artifacts"].update(step_result.get("artifacts", {}))
-        
-        return self._build_result(result, context)
 
+        return self._build_result(result, context)
 
     def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Execute phase.
-        
+
         Supports two execution modes:
         1. hardcoded (default): Uses static step execution
         2. dynamic: Reads steps from YAML
@@ -126,92 +139,98 @@ class ExportPhase:
     def _execute_hardcoded(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Hardcoded execution mode (original implementation).
-        
+
         Execute Export Phase.
-        
+
         Args:
             context: Execution context with validated_configuration
-            
+
         Returns:
             Dict with produced artifacts
         """
         if self.ui:
-            self.ui.show_phase_header("Export Phase", "Export final configuration files for deployment")
-        
+            self.ui.show_phase_header(
+                "Export Phase", "Export final configuration files for deployment"
+            )
+
         logger.info("Executing Export Phase")
-        
+
         # Create export directory
         self.export_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Add export_dir to context for steps to use
-        context['export_dir'] = str(self.export_dir)
-        
+        context["export_dir"] = str(self.export_dir)
+
         # Check validation result
-        validation_passed = context.get('validation_passed', False)
+        validation_passed = context.get("validation_passed", False)
         if not validation_passed:
-            logger.warning("⚠️  Configuration validation had errors - proceeding with caution")
+            logger.warning(
+                "⚠️  Configuration validation had errors - proceeding with caution"
+            )
             logger.warning("Check validation_report.yml for details")
-        
+
         # Load user configuration if it's a file path
-        user_config_file = context.get('user_configuration_file')
+        user_config_file = context.get("user_configuration_file")
         if user_config_file and isinstance(user_config_file, str):
             user_config_path = Path(user_config_file)
             if user_config_path.exists():
-                with open(user_config_path, 'r') as f:
+                with open(user_config_path, "r") as f:
                     raw_config = yaml.safe_load(f)
-                
+
                 # Extract user_responses and convert from dot notation to nested dict
-                user_responses = raw_config.get('user_responses', {})
+                user_responses = raw_config.get("user_responses", {})
                 user_config = self._convert_dot_notation_to_nested(user_responses)
-                context['user_configuration'] = user_config
-        
-        result = {'artifacts': {}}
-        
+                context["user_configuration"] = user_config
+
+        result = {"artifacts": {}}
+
         # === GENERATED: STEP_EXECUTION - DO NOT EDIT ===
-# Step 1: Export docker-compose.yml file for deployment
+        # Step 1: Export docker-compose.yml file for deployment
         logger.info("Step 1: Export docker-compose.yml file for deployment")
         step_1 = ExportDockerComposeStep(self.project_root, self.ui)
         step_result = step_1.execute(context)
         context.update(step_result.get("artifacts", {}))
         result["artifacts"].update(step_result.get("artifacts", {}))
-        
+
         # Step 2: Export .env file with environment variables
         logger.info("Step 2: Export .env file with environment variables")
         step_2 = ExportEnvFileStep(self.project_root, self.ui)
         step_result = step_2.execute(context)
         context.update(step_result.get("artifacts", {}))
         result["artifacts"].update(step_result.get("artifacts", {}))
-        
+
         # Step 3: Export configuration manifest for deploy-manager
         logger.info("Step 3: Export configuration manifest for deploy-manager")
         step_3 = ExportManifestStep(self.project_root, self.ui)
         step_result = step_3.execute(context)
         context.update(step_result.get("artifacts", {}))
         result["artifacts"].update(step_result.get("artifacts", {}))
-        
-# === END GENERATED: STEP_EXECUTION ===
-        
+
+        # === END GENERATED: STEP_EXECUTION ===
+
         logger.info("Export Phase completed successfully")
         logger.info(f"Files written to {self.export_dir}")
-        
+
         # Return collected artifacts from context
         return {
-            'artifacts': result['artifacts'],
-            'docker_compose_file': context.get('docker_compose_file'),
-            'env_file': context.get('env_file'),
-            'manifest_file': context.get('manifest_file'),
-            'export_summary': context.get('export_summary'),
-            'final_configuration_files': str(self.export_dir)
+            "artifacts": result["artifacts"],
+            "docker_compose_file": context.get("docker_compose_file"),
+            "env_file": context.get("env_file"),
+            "manifest_file": context.get("manifest_file"),
+            "export_summary": context.get("export_summary"),
+            "final_configuration_files": str(self.export_dir),
         }
-    
-    def _convert_dot_notation_to_nested(self, dot_dict: Dict[str, Any]) -> Dict[str, Any]:
+
+    def _convert_dot_notation_to_nested(
+        self, dot_dict: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Convert flat dot notation dict to nested dict.
         Example: {'project.name': 'Test'} -> {'project': {'name': 'Test'}}
         """
         result = {}
         for key, value in dot_dict.items():
-            parts = key.split('.')
+            parts = key.split(".")
             current = result
             for part in parts[:-1]:
                 if part not in current:
@@ -220,37 +239,34 @@ class ExportPhase:
             current[parts[-1]] = value
         return result
 
-
     def _execute_step_with_units(
-        self,
-        step_spec: Dict[str, Any],
-        context: Dict[str, Any]
+        self, step_spec: Dict[str, Any], context: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Execute a step by dynamically loading and calling units from YAML.
-        
+
         Args:
             step_spec: Step specification from YAML
             context: Execution context
-            
+
         Returns:
             Dict with step results
         """
         import importlib
-        
-        step_id = step_spec['step_id']
-        units = step_spec.get('units', [])
-        
+
+        step_id = step_spec["step_id"]
+        units = step_spec.get("units", [])
+
         logger.info(f"Step {step_id} has {len(units)} units")
-        
+
         step_results = {}
-        
+
         for unit_spec in units:
-            unit_id = unit_spec['unit_id']
-            library = unit_spec['library']
-            class_name = unit_spec['class']
-            method_name = unit_spec['method']
-            
+            unit_id = unit_spec["unit_id"]
+            library = unit_spec["library"]
+            class_name = unit_spec["class"]
+            method_name = unit_spec["method"]
+
             try:
                 # Dynamic import: from phases.libraries.{library} import {class}
                 # Use PathResolver if available for library path resolution
@@ -262,156 +278,169 @@ class ExportPhase:
                     module_path = f"phases.libraries.{library}"
                 module = importlib.import_module(module_path)
                 unit_class = getattr(module, class_name)
-                
+
                 # Instantiate and call method
                 unit_instance = unit_class()
                 method = getattr(unit_instance, method_name)
                 result = method(context)
-                
+
                 logger.info(f"Unit {unit_id} executed successfully")
                 step_results[unit_id] = result
-                
+
             except (ImportError, AttributeError) as e:
                 logger.warning(f"Could not load unit {unit_id}: {e}")
                 # Mock execution for unimplemented units
                 step_results[unit_id] = self._mock_unit_execution(unit_spec)
             except Exception as e:
                 logger.error(f"Error executing unit {unit_id}: {e}")
-                step_results[unit_id] = {'error': str(e), 'status': 'failed'}
-        
-        return {'artifacts': step_results}
-    
+                step_results[unit_id] = {"error": str(e), "status": "failed"}
+
+        return {"artifacts": step_results}
+
     def _execute_step_traditional(
-        self,
-        step_spec: Dict[str, Any],
-        context: Dict[str, Any]
+        self, step_spec: Dict[str, Any], context: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Execute a step using the traditional Step class approach.
-        
+
         Falls back to importing and calling the Step class if no units defined.
-        
+
         Args:
             step_spec: Step specification from YAML
             context: Execution context
-            
+
         Returns:
             Dict with step results
         """
-        step_id = step_spec['step_id']
-        
+        step_id = step_spec["step_id"]
+
         # Try to dynamically load the step class
         # This is a fallback - ideally all phases should use the step_class_map
         logger.warning(f"Step {step_id} has no units, attempting traditional execution")
-        
+
         # Return empty result - the step should be handled by _execute_hardcoded
-        return {'artifacts': {}}
-    
+        return {"artifacts": {}}
+
     def _mock_unit_execution(self, unit_spec: Dict[str, Any]) -> Dict[str, Any]:
         """
         Mock execution for units that don't exist yet.
-        
+
         Args:
             unit_spec: Unit specification from YAML
-            
+
         Returns:
             Mock execution result
         """
-        logger.info(f"MOCK: Executing {unit_spec['library']}.{unit_spec['class']}.{unit_spec['method']}()")
+        logger.info(
+            f"MOCK: Executing {unit_spec['library']}.{unit_spec['class']}.{unit_spec['method']}()"
+        )
         return {
-            'status': 'mocked',
-            'unit': unit_spec['unit_id'],
-            'message': f"Mock execution of {unit_spec['class']}.{unit_spec['method']}()"
+            "status": "mocked",
+            "unit": unit_spec["unit_id"],
+            "message": f"Mock execution of {unit_spec['class']}.{unit_spec['method']}()",
         }
-    
-    def _build_result(self, result: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+
+    def _build_result(
+        self, result: Dict[str, Any], context: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Build final result dictionary using PathResolver for artifact paths.
-        
+
         Args:
             result: Accumulated results
             context: Execution context
-            
+
         Returns:
             Final result dictionary with resolved paths
         """
-        final_result = {'artifacts': result.get('artifacts', {})}
-        
+        final_result = {"artifacts": result.get("artifacts", {})}
+
         # Add all context keys to result
         for key, value in context.items():
             if key not in final_result:
                 final_result[key] = value
-        
+
         # Use PathResolver to validate artifact paths if available
         if self.path_resolver:
-            for artifact_id in final_result.get('artifacts', {}).keys():
+            for artifact_id in final_result.get("artifacts", {}).keys():
                 try:
                     # Validate artifact is accessible
                     accessible = self.path_resolver.validate_artifact_accessible(
-                        artifact_id, 
-                        mode='write'
+                        artifact_id, mode="write"
                     )
                     if accessible:
-                        logger.debug(f"Artifact '{artifact_id}' path validated by PathResolver")
+                        logger.debug(
+                            f"Artifact '{artifact_id}' path validated by PathResolver"
+                        )
                 except Exception as e:
                     logger.debug(f"Could not validate artifact '{artifact_id}': {e}")
-        
+
         return final_result
+
 
 def main():
     """Standalone entry point for testing Phase 5: Export."""
     import argparse
     from datetime import datetime
-    
+
     parser = argparse.ArgumentParser(description="Phase 5: Export")
-    parser.add_argument('--user-config', required=True, help='Path to user_configuration.yml from Phase 3')
-    parser.add_argument('--validation-passed', action='store_true', help='Set if validation passed')
-    parser.add_argument('--output-dir', help='Output directory', default=None)
-    parser.add_argument('--verbose', action='store_true', help='Enable verbose logging')
-    parser.add_argument('--dynamic', action='store_true', help='Use YAML-driven execution mode')
-    
+    parser.add_argument(
+        "--user-config",
+        required=True,
+        help="Path to user_configuration.yml from Phase 3",
+    )
+    parser.add_argument(
+        "--validation-passed", action="store_true", help="Set if validation passed"
+    )
+    parser.add_argument("--output-dir", help="Output directory", default=None)
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
+    parser.add_argument(
+        "--dynamic", action="store_true", help="Use YAML-driven execution mode"
+    )
+
     args = parser.parse_args()
-    
+
     # Setup logging
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
-    
+
     # Setup paths
     phase_dir = Path(__file__).parent
     project_root = phase_dir.parent.parent
-    
+
     try:
         # Initialize phase
-        mode = 'dynamic' if args.dynamic else 'hardcoded'
+        mode = "dynamic" if args.dynamic else "hardcoded"
         phase = ExportPhase(project_root=project_root, ui=None, mode=mode)
-        
+
         # Build context
         context = {
-            'user_configuration_file': args.user_config,
-            'validation_passed': args.validation_passed,
-            'generated_at': datetime.now().isoformat()
+            "user_configuration_file": args.user_config,
+            "validation_passed": args.validation_passed,
+            "generated_at": datetime.now().isoformat(),
         }
-        
+
         if args.output_dir:
-            context['export_dir'] = args.output_dir
-        
+            context["export_dir"] = args.output_dir
+
         # Execute export
         result = phase.execute(context)
-        
+
         print(f"\n✅ Export Phase completed!")
         print(f"📁 Files exported:")
         print(f"  - {result.get('docker_compose_file')}")
         print(f"  - {result.get('env_file')}")
         print(f"  - {result.get('manifest_file')}")
         print(f"\n✅ Ready for deployment!")
-        
+
         return 0
-        
+
     except Exception as e:
         print(f"\n❌ Export phase failed: {e}")
         import traceback
+
         traceback.print_exc()
         return 1
 

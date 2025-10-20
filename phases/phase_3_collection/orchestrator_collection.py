@@ -19,17 +19,19 @@ import sys
 
 # PHASE_SEQUENCE: Physical position in phases directory (changeable during reordering)
 # Override via environment: export PHASE_SEQUENCE=N
-PHASE_SEQUENCE = int(os.getenv('PHASE_SEQUENCE', '3'))
+PHASE_SEQUENCE = int(os.getenv("PHASE_SEQUENCE", "3"))
 
 # PHASE_ID: Logical identifier (stable, never changes)
-PHASE_ID = 'collection'
+PHASE_ID = "collection"
 
 # Computed paths (automatically adjusted when PHASE_SEQUENCE changes)
 PHASE_DIR_NAME = f"phase_{PHASE_SEQUENCE}_{PHASE_ID}"
 
 # PROJECT_ROOT: Auto-detected or override via environment
 # Override via environment: export PROJECT_ROOT=/path/to/project
-PROJECT_ROOT = Path(os.getenv('PROJECT_ROOT', Path(__file__).parent.parent.parent)).resolve()
+PROJECT_ROOT = Path(
+    os.getenv("PROJECT_ROOT", Path(__file__).parent.parent.parent)
+).resolve()
 
 # PHASE_DIR: Full path to this phase's directory
 PHASE_DIR = PROJECT_ROOT / "phases" / PHASE_DIR_NAME
@@ -39,16 +41,9 @@ OUTPUT_DIR = PHASE_DIR / "outputs"
 
 # =============================================================================
 
-# === GENERATED: STEP_IMPORTS - DO NOT EDIT ===
-# Handle both relative imports (when called by parent) and absolute imports (when run standalone)
-if __name__ == '__main__':
-    # Running standalone - use absolute imports
-    sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-    from phases.phase_3_collection.step_1_collect_user_configuration.collect_user_configuration import CollectUserConfigurationStep
-else:
-    # When imported as module, use relative imports
-    from .step_1_collect_user_configuration.collect_user_configuration import CollectUserConfigurationStep
-# === END GENERATED: STEP_IMPORTS ===
+from phases.phase_3_collection.step_1_collect_user_configuration.collect_user_configuration import (
+    CollectUserConfigurationStep,
+)
 
 # Infrastructure imports (not generated)
 try:
@@ -64,30 +59,32 @@ class CollectionPhase:
     """
     Interactive Collection
     Status: IMPLEMENTED
-    
+
     Collect user configuration via interactive UI
-    
+
     Artifacts Consumed: tui_defaults_file
     Artifacts Produced: user_configuration
     """
-    
+
     def __init__(
         self,
         project_root: Path = None,
         ui=None,
         path_resolver=None,
-        mode: str = 'hardcoded',
+        mode: str = "hardcoded",
         spec_file: Optional[Path] = None,
-        phase_spec: Optional[Dict[str, Any]] = None
+        phase_spec: Optional[Dict[str, Any]] = None,
     ):
         # Use path constants if no project_root provided
         self.project_root = project_root if project_root else PROJECT_ROOT
         self.ui = ui
         self.mode = mode
-        self.spec_file = spec_file or self.project_root / "design_specs/control_flows.yml"
+        self.spec_file = (
+            spec_file or self.project_root / "design_specs/control_flows.yml"
+        )
         self.phase_spec = phase_spec
         self.phase_dir = PHASE_DIR
-        
+
         # Initialize path resolver for artifact resolution
         if path_resolver:
             self.path_resolver = path_resolver
@@ -99,46 +96,45 @@ class CollectionPhase:
                 self.path_resolver = None
         else:
             self.path_resolver = None
-        
+
     def _execute_dynamic(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Execute phase using YAML specification (dynamic mode).
-        
+
         Reads steps from phase_spec['steps'] and executes them in sequence.
         """
         if not self.phase_spec:
             logger.warning("No phase spec available, falling back to hardcoded mode")
             return self._execute_hardcoded(context)
-        
+
         logger.info("Using YAML-driven execution")
-        result = {'artifacts': {}}
-        
-        for step_spec in self.phase_spec.get('steps', []):
-            step_id = step_spec['step_id']
-            step_status = step_spec.get('status', 'PLANNED')
-            
-            if step_status in ['PLANNED', 'SKIPPED']:
+        result = {"artifacts": {}}
+
+        for step_spec in self.phase_spec.get("steps", []):
+            step_id = step_spec["step_id"]
+            step_status = step_spec.get("status", "PLANNED")
+
+            if step_status in ["PLANNED", "SKIPPED"]:
                 logger.info(f"Skipping step {step_id} (status: {step_status})")
                 continue
-            
+
             logger.info(f"Executing step: {step_id}")
-            
-            if 'units' in step_spec and step_spec['units']:
+
+            if "units" in step_spec and step_spec["units"]:
                 step_result = self._execute_step_with_units(step_spec, context)
             else:
                 step_result = self._execute_step_traditional(step_spec, context)
-            
+
             if step_result:
                 context.update(step_result.get("artifacts", {}))
                 result["artifacts"].update(step_result.get("artifacts", {}))
-        
-        return self._build_result(result, context)
 
+        return self._build_result(result, context)
 
     def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Execute phase.
-        
+
         Supports two execution modes:
         1. hardcoded (default): Uses static step execution
         2. dynamic: Reads steps from YAML
@@ -151,76 +147,78 @@ class CollectionPhase:
     def _execute_hardcoded(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Hardcoded execution mode (original implementation).
-        
+
         Execute Interactive Collection.
-        
+
         Args:
             context: Execution context with consumed artifacts:
                 - tui_defaults_file: Path to Phase 2 TUI defaults (optional)
                 - mock_responses: Optional mock responses for testing
                 - flow_name: Optional flow name (default: config_tui.layout)
-            
+
         Returns:
             Dict with produced artifacts:
                 - user_configuration: Path to collected configuration YAML
         """
         if self.ui:
-            self.ui.show_phase_header("Interactive Collection", "Collect user configuration via interactive UI")
-        
+            self.ui.show_phase_header(
+                "Interactive Collection",
+                "Collect user configuration via interactive UI",
+            )
+
         logger.info("Executing Interactive Collection")
-        
-        result = {'artifacts': {}}
-        
+
+        result = {"artifacts": {}}
+
         # === GENERATED: STEP_EXECUTION - DO NOT EDIT ===
-# Step 1: Load TUI layout and defaults, render interactive form, collect user input
-        logger.info("Step 1: Load TUI layout and defaults, render interactive form, collect user input")
+        # Step 1: Load TUI layout and defaults, render interactive form, collect user input
+        logger.info(
+            "Step 1: Load TUI layout and defaults, render interactive form, collect user input"
+        )
         step_1 = CollectUserConfigurationStep(self.project_root, self.ui)
         step_result = step_1.execute(context)
         context.update(step_result.get("artifacts", {}))
         result["artifacts"].update(step_result.get("artifacts", {}))
-        
-# === END GENERATED: STEP_EXECUTION ===
-        
+
+        # === END GENERATED: STEP_EXECUTION ===
+
         logger.info("Interactive Collection completed successfully")
-        
+
         # Return collected artifacts from context
         return {
-            'artifacts': result['artifacts'],
-            'user_configuration_file': context.get('user_configuration_file'),
-            'user_configuration': context.get('user_configuration')
+            "artifacts": result["artifacts"],
+            "user_configuration_file": context.get("user_configuration_file"),
+            "user_configuration": context.get("user_configuration"),
         }
 
-
     def _execute_step_with_units(
-        self,
-        step_spec: Dict[str, Any],
-        context: Dict[str, Any]
+        self, step_spec: Dict[str, Any], context: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Execute a step by dynamically loading and calling units from YAML.
-        
+
         Args:
             step_spec: Step specification from YAML
             context: Execution context
-            
+
         Returns:
             Dict with step results
         """
         import importlib
-        
-        step_id = step_spec['step_id']
-        units = step_spec.get('units', [])
-        
+
+        step_id = step_spec["step_id"]
+        units = step_spec.get("units", [])
+
         logger.info(f"Step {step_id} has {len(units)} units")
-        
+
         step_results = {}
-        
+
         for unit_spec in units:
-            unit_id = unit_spec['unit_id']
-            library = unit_spec['library']
-            class_name = unit_spec['class']
-            method_name = unit_spec['method']
-            
+            unit_id = unit_spec["unit_id"]
+            library = unit_spec["library"]
+            class_name = unit_spec["class"]
+            method_name = unit_spec["method"]
+
             try:
                 # Dynamic import: from phases.libraries.{library} import {class}
                 # Use PathResolver if available for library path resolution
@@ -232,116 +230,126 @@ class CollectionPhase:
                     module_path = f"phases.libraries.{library}"
                 module = importlib.import_module(module_path)
                 unit_class = getattr(module, class_name)
-                
+
                 # Instantiate and call method
                 unit_instance = unit_class()
                 method = getattr(unit_instance, method_name)
                 result = method(context)
-                
+
                 logger.info(f"Unit {unit_id} executed successfully")
                 step_results[unit_id] = result
-                
+
             except (ImportError, AttributeError) as e:
                 logger.warning(f"Could not load unit {unit_id}: {e}")
                 # Mock execution for unimplemented units
                 step_results[unit_id] = self._mock_unit_execution(unit_spec)
             except Exception as e:
                 logger.error(f"Error executing unit {unit_id}: {e}")
-                step_results[unit_id] = {'error': str(e), 'status': 'failed'}
-        
-        return {'artifacts': step_results}
-    
+                step_results[unit_id] = {"error": str(e), "status": "failed"}
+
+        return {"artifacts": step_results}
+
     def _execute_step_traditional(
-        self,
-        step_spec: Dict[str, Any],
-        context: Dict[str, Any]
+        self, step_spec: Dict[str, Any], context: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Execute a step using the traditional Step class approach.
-        
+
         Falls back to importing and calling the Step class if no units defined.
-        
+
         Args:
             step_spec: Step specification from YAML
             context: Execution context
-            
+
         Returns:
             Dict with step results
         """
-        step_id = step_spec['step_id']
-        
+        step_id = step_spec["step_id"]
+
         # Try to dynamically load the step class
         # This is a fallback - ideally all phases should use the step_class_map
         logger.warning(f"Step {step_id} has no units, attempting traditional execution")
-        
+
         # Return empty result - the step should be handled by _execute_hardcoded
-        return {'artifacts': {}}
-    
+        return {"artifacts": {}}
+
     def _mock_unit_execution(self, unit_spec: Dict[str, Any]) -> Dict[str, Any]:
         """
         Mock execution for units that don't exist yet.
-        
+
         Args:
             unit_spec: Unit specification from YAML
-            
+
         Returns:
             Mock execution result
         """
-        logger.info(f"MOCK: Executing {unit_spec['library']}.{unit_spec['class']}.{unit_spec['method']}()")
+        logger.info(
+            f"MOCK: Executing {unit_spec['library']}.{unit_spec['class']}.{unit_spec['method']}()"
+        )
         return {
-            'status': 'mocked',
-            'unit': unit_spec['unit_id'],
-            'message': f"Mock execution of {unit_spec['class']}.{unit_spec['method']}()"
+            "status": "mocked",
+            "unit": unit_spec["unit_id"],
+            "message": f"Mock execution of {unit_spec['class']}.{unit_spec['method']}()",
         }
-    
-    def _build_result(self, result: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+
+    def _build_result(
+        self, result: Dict[str, Any], context: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Build final result dictionary using PathResolver for artifact paths.
-        
+
         Args:
             result: Accumulated results
             context: Execution context
-            
+
         Returns:
             Final result dictionary with resolved paths
         """
-        final_result = {'artifacts': result.get('artifacts', {})}
-        
+        final_result = {"artifacts": result.get("artifacts", {})}
+
         # Add all context keys to result
         for key, value in context.items():
             if key not in final_result:
                 final_result[key] = value
-        
+
         # Use PathResolver to validate artifact paths if available
         if self.path_resolver:
-            for artifact_id in final_result.get('artifacts', {}).keys():
+            for artifact_id in final_result.get("artifacts", {}).keys():
                 try:
                     # Validate artifact is accessible
                     accessible = self.path_resolver.validate_artifact_accessible(
-                        artifact_id, 
-                        mode='write'
+                        artifact_id, mode="write"
                     )
                     if accessible:
-                        logger.debug(f"Artifact '{artifact_id}' path validated by PathResolver")
+                        logger.debug(
+                            f"Artifact '{artifact_id}' path validated by PathResolver"
+                        )
                 except Exception as e:
                     logger.debug(f"Could not validate artifact '{artifact_id}': {e}")
-        
+
         return final_result
+
 
 def main():
     """Standalone entry point for testing Phase 3: Interactive Collection."""
     import argparse
-    
+
     parser = argparse.ArgumentParser(description="Phase 3: Interactive Collection")
-    parser.add_argument('--tui-defaults', help='Path to tui_defaults.yml from Phase 2 (optional)')
-    parser.add_argument('--mock-file', help='Path to mock responses file (optional)')
-    parser.add_argument('--output-dir', help='Output directory', default=None)
-    parser.add_argument('--verbose', action='store_true', help='Enable verbose logging')
-    parser.add_argument('--show-paths', action='store_true', help='Display path configuration and exit')
-    parser.add_argument('--dynamic', action='store_true', help='Use YAML-driven execution mode')
-    
+    parser.add_argument(
+        "--tui-defaults", help="Path to tui_defaults.yml from Phase 2 (optional)"
+    )
+    parser.add_argument("--mock-file", help="Path to mock responses file (optional)")
+    parser.add_argument("--output-dir", help="Output directory", default=None)
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
+    parser.add_argument(
+        "--show-paths", action="store_true", help="Display path configuration and exit"
+    )
+    parser.add_argument(
+        "--dynamic", action="store_true", help="Use YAML-driven execution mode"
+    )
+
     args = parser.parse_args()
-    
+
     # Show path configuration if requested
     if args.show_paths:
         print("\n" + "=" * 70)
@@ -355,23 +363,23 @@ def main():
         print(f"   PROJECT_ROOT: {PROJECT_ROOT}")
         print(f"   PHASE_DIR: {PHASE_DIR}")
         print(f"   OUTPUT_DIR: {OUTPUT_DIR}")
-        
+
         # Validate against PathResolver
         if PathResolver:
             try:
                 path_resolver = PathResolver.from_execution_context(__file__)
                 resolver_phase_dir = path_resolver.resolve_phase_directory(PHASE_ID)
                 resolver_output_dir = path_resolver.resolve_phase_output_dir(PHASE_ID)
-                
+
                 print(f"\n✅ PathResolver Validation:")
-                
+
                 if Path(resolver_phase_dir) == PHASE_DIR:
                     print(f"   Phase directory: MATCHES")
                 else:
                     print(f"   Phase directory: MISMATCH")
                     print(f"     Computed: {PHASE_DIR}")
                     print(f"     Resolver: {resolver_phase_dir}")
-                
+
                 if Path(resolver_output_dir) == OUTPUT_DIR:
                     print(f"   Output directory: MATCHES")
                 else:
@@ -382,49 +390,56 @@ def main():
                 print(f"\n⚠️  PathResolver validation failed: {e}")
         else:
             print(f"\n⚠️  PathResolver not available")
-        
+
         print("\n" + "=" * 70)
         return 0
-    
+
     # Setup logging
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
-    
+
     try:
         # Initialize phase with path resolver
-        path_resolver = PathResolver.from_execution_context(__file__) if PathResolver else None
-        mode = 'dynamic' if args.dynamic else 'hardcoded'
-        phase = CollectionPhase(project_root=PROJECT_ROOT, ui=None, path_resolver=path_resolver, mode=mode)
-        
+        path_resolver = (
+            PathResolver.from_execution_context(__file__) if PathResolver else None
+        )
+        mode = "dynamic" if args.dynamic else "hardcoded"
+        phase = CollectionPhase(
+            project_root=PROJECT_ROOT, ui=None, path_resolver=path_resolver, mode=mode
+        )
+
         # Build context
         context = {}
         if args.tui_defaults:
-            context['tui_defaults_file'] = args.tui_defaults
+            context["tui_defaults_file"] = args.tui_defaults
         if args.mock_file:
-            context['mock_responses'] = args.mock_file
-        
+            context["mock_responses"] = args.mock_file
+
         # Execute phase
         logger.info("Executing Interactive Collection Phase")
         result = phase.execute(context)
-        
+
         print("\n" + "=" * 70)
         print("✅ PHASE 3 COMPLETE: Interactive Collection")
         print("=" * 70)
         print(f"\n📊 Phase Summary:")
-        print(f"  • user_configuration_file: {result.get('user_configuration_file', 'N/A')}")
-        
+        print(
+            f"  • user_configuration_file: {result.get('user_configuration_file', 'N/A')}"
+        )
+
         print(f"\n✅ Ready for Phase 4: Validation")
-        
+
         return 0
-        
+
     except Exception as e:
         print(f"\n❌ Phase 3 failed: {e}")
         import traceback
+
         traceback.print_exc()
         return 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     exit(main())

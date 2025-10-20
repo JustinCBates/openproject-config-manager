@@ -12,11 +12,6 @@ import yaml
 from dataclasses import dataclass
 import sys
 
-# Conditional imports to handle both module context and standalone execution
-if __name__ == '__main__':
-    # When running as standalone script, add parent to path for absolute imports
-    sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
-    # No step-specific modules to import for standalone mode
 
 logger = logging.getLogger(__name__)
 
