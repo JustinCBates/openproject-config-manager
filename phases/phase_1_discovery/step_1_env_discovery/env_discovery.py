@@ -10,14 +10,10 @@ from typing import Dict, Any
 import logging
 import sys
 
-# Conditional imports to handle both module context and standalone execution
-if __name__ == '__main__':
-    # When running as standalone script, add parent to path for absolute imports
-    sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
-    from phases.phase_1_discovery.step_1_env_discovery.environment import EnvironmentDiscovery
-else:
-    # When imported as module, use relative imports
-    from .environment import EnvironmentDiscovery
+
+from phases.phase_1_discovery.step_1_env_discovery.environment import (
+    EnvironmentDiscovery,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -26,89 +22,90 @@ def execute_env_discovery(context: Dict[str, Any], phase_dir: Path) -> Dict[str,
     """
     Environment Discovery
     Status: IMPLEMENTED
-    
+
     Detect Docker, system capabilities, network configuration
-    
+
     Args:
         context: Execution context
         phase_dir: Phase directory path
-        
+
     Returns:
         Dict with step results including environment_data
     """
     logger.info("Executing step: Environment Discovery")
-    
+
     try:
         # Initialize and run environment discovery
         env_discovery = EnvironmentDiscovery()
         environment_data = env_discovery.discover()
-        
-        logger.info(f"Environment discovery completed: {len(environment_data.get('all_variables', {}))} variables found")
-        
+
+        logger.info(
+            f"Environment discovery completed: {len(environment_data.get('all_variables', {}))} variables found"
+        )
+
         result = {
-            'step': 'env_discovery',
-            'status': 'completed',
-            'environment_data': environment_data
+            "step": "env_discovery",
+            "status": "completed",
+            "environment_data": environment_data,
         }
-        
+
         logger.info("Step Environment Discovery completed successfully")
         return result
-        
+
     except Exception as e:
         logger.error(f"Environment discovery failed: {e}")
-        return {
-            'step': 'env_discovery',
-            'status': 'failed',
-            'error': str(e)
-        }
+        return {"step": "env_discovery", "status": "failed", "error": str(e)}
 
 
 def main():
     """Standalone entry point for testing this step."""
     import argparse
-    
+
     parser = argparse.ArgumentParser(description="Environment Discovery")
-    parser.add_argument('--output-dir', help='Output directory', default=None)
-    parser.add_argument('--verbose', action='store_true', help='Enable verbose logging')
-    
+    parser.add_argument("--output-dir", help="Output directory", default=None)
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
+
     args = parser.parse_args()
-    
+
     # Setup logging
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
-    
+
     # Setup paths
     phase_dir = Path(__file__).parent.parent
-    
+
     try:
         # Build context from CLI args
         context = {}
-        
+
         # Execute step
         result = execute_env_discovery(context, phase_dir)
-        
+
         print("\n" + "=" * 70)
         print(f"✅ Step completed: {result.get('status', 'unknown')}")
         print("=" * 70)
         print(f"\n📊 Environment Discovery Results:")
-        
-        if 'environment_data' in result:
-            env_data = result['environment_data']
-            print(f"  • Relevant variables: {len(env_data.get('relevant_variables', {}))}")
+
+        if "environment_data" in result:
+            env_data = result["environment_data"]
+            print(
+                f"  • Relevant variables: {len(env_data.get('relevant_variables', {}))}"
+            )
             print(f"  • All variables: {len(env_data.get('all_variables', {}))}")
-        
-        return 0 if result.get('status') == 'completed' else 1
-        
+
+        return 0 if result.get("status") == "completed" else 1
+
     except Exception as e:
         print(f"\n❌ Step failed: {e}")
         import traceback
+
         traceback.print_exc()
         return 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     exit(main())
 
 
@@ -123,26 +120,28 @@ from .env_discovery import execute_env_discovery
 
 class EnvDiscoveryStep:
     """Wrapper class for env_discovery step."""
-    
+
     def __init__(self, project_root: Path, ui=None):
         self.project_root = project_root
         self.ui = ui
         self.phase_dir = project_root / "phases/phase_1_discovery"
-    
+
     def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Execute env_discovery step.
-        
+
         Args:
             context: Execution context
-            
+
         Returns:
             Dict with artifacts
         """
         # Call existing function
         result_data = execute_env_discovery(context, self.phase_dir)
-        
+
         # Return in expected format
         return {
-            "artifacts": result_data if isinstance(result_data, dict) else {"data": result_data}
+            "artifacts": (
+                result_data if isinstance(result_data, dict) else {"data": result_data}
+            )
         }

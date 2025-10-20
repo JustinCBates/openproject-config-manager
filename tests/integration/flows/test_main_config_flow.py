@@ -6,10 +6,6 @@ Test script for ConfigurationManager with FlowEngine integration.
 import sys
 from pathlib import Path
 
-# Add the source directory to Python path
-src_path = Path(__file__).parent / "src"
-sys.path.insert(0, str(src_path))
-
 from openproject_config_manager.core.manager import ConfigurationManager
 
 

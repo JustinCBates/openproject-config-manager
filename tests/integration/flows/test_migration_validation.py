@@ -13,10 +13,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 from unittest.mock import MagicMock, patch
 
-# Add paths for our components
-config_manager_src = Path(__file__).parent.parent / "src"
-sys.path.insert(0, str(config_manager_src))
-
 from openproject_config_manager.core.config import Configuration
 from openproject_config_manager.core.manager import ConfigurationManager
 
@@ -43,7 +39,11 @@ class MigrationValidator:
                 "url_config",
                 "storage_config",
             ],
-            "validation_phase": ["configuration_validation", "error_reporting", "warning_system"],
+            "validation_phase": [
+                "configuration_validation",
+                "error_reporting",
+                "warning_system",
+            ],
             "export_phase": [
                 "cfg_file_generation",
                 "docker_compose_integration",
@@ -119,7 +119,9 @@ class MigrationValidator:
 
         # Test interactive collection
         if not hasattr(manager, "run_interactive_collection_phase"):
-            missing_features.append("interactive_collection.run_interactive_collection_phase")
+            missing_features.append(
+                "interactive_collection.run_interactive_collection_phase"
+            )
 
         if not hasattr(manager, "flow_engine"):
             missing_features.append("interactive_collection.flow_engine")
@@ -238,7 +240,9 @@ class MigrationValidator:
                 print(f"   ❌ Missing flows: {missing_flows}")
                 return False
 
-            print(f"   ✅ FlowEngine integration working ({len(available_flows)} flows loaded)")
+            print(
+                f"   ✅ FlowEngine integration working ({len(available_flows)} flows loaded)"
+            )
             return True
 
         except Exception as e:
@@ -383,8 +387,12 @@ class MigrationValidator:
             manager.env_discovery.discover = MagicMock(
                 return_value={"SECRET_KEY_BASE": "test_secret"}
             )
-            manager.system_discovery.discover = MagicMock(return_value={"platform": "linux"})
-            manager.docker_discovery.discover = MagicMock(return_value={"containers": []})
+            manager.system_discovery.discover = MagicMock(
+                return_value={"platform": "linux"}
+            )
+            manager.docker_discovery.discover = MagicMock(
+                return_value={"containers": []}
+            )
 
             # Run discovery
             discovered = manager.run_discovery_phase()
@@ -455,12 +463,20 @@ class MigrationValidator:
                         "username": "openproject",
                         "password": "test_password",  # Add required password field
                     },
-                    "proxy_configuration": {"domain": "openproject.local", "ssl_enabled": False},
+                    "proxy_configuration": {
+                        "domain": "openproject.local",
+                        "ssl_enabled": False,
+                    },
                     "url_configuration": {"uri_namespace_enabled": False},
-                    "storage_configuration": {"data_volume": "./data", "backup_enabled": False},
+                    "storage_configuration": {
+                        "data_volume": "./data",
+                        "backup_enabled": False,
+                    },
                 }
 
-                mock_execute.side_effect = lambda flow_id, **kwargs: flow_responses.get(flow_id, {})
+                mock_execute.side_effect = lambda flow_id, **kwargs: flow_responses.get(
+                    flow_id, {}
+                )
 
                 configuration = manager.run_interactive_collection_phase()
                 if not isinstance(configuration, Configuration):
@@ -515,7 +531,9 @@ class MigrationValidator:
         print(f"   Total test time: {total_time:.3f}s")
 
         if "initialization" in self.performance_metrics:
-            print(f"   Manager initialization: {self.performance_metrics['initialization']:.3f}s")
+            print(
+                f"   Manager initialization: {self.performance_metrics['initialization']:.3f}s"
+            )
         if "flow_loading" in self.performance_metrics:
             print(f"   Flow loading: {self.performance_metrics['flow_loading']:.3f}s")
         if "discovery" in self.performance_metrics:

@@ -12,10 +12,6 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
-# Add project to path
-project_root = Path(__file__).parent.parent.parent.parent
-sys.path.insert(0, str(project_root))
-
 
 class TestDiscoveryPhaseIntegration(unittest.TestCase):
     """Integration tests for Discovery Phase orchestrator."""
@@ -99,7 +95,8 @@ class TestDiscoveryPhaseIntegration(unittest.TestCase):
 
         # Simulate UI interactions
         self.mock_ui.show_phase_header(
-            "Discovery Phase", "Discover system environment and generate intelligent defaults"
+            "Discovery Phase",
+            "Discover system environment and generate intelligent defaults",
         )
         self.mock_ui.show_phase_header.assert_called_once()
 

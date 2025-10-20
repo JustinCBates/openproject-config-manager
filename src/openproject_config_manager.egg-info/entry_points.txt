@@ -1,0 +1,2 @@
+[console_scripts]
+config-manager = openproject_config_manager.main:main

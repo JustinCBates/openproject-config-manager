@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class ConfigurationVariable(BaseModel):
@@ -17,15 +17,22 @@ class ConfigurationVariable(BaseModel):
     category: str = Field(..., description="Variable category")
     required: bool = Field(True, description="Whether this variable is required")
     sensitive: bool = Field(False, description="Whether this is sensitive data")
-    validation_pattern: Optional[str] = Field(None, description="Regex validation pattern")
+    validation_pattern: Optional[str] = Field(
+        None, description="Regex validation pattern"
+    )
     choices: Optional[List[str]] = Field(None, description="Valid choices if limited")
-    depends_on: Optional[List[str]] = Field(None, description="Dependencies on other variables")
+    depends_on: Optional[List[str]] = Field(
+        None, description="Dependencies on other variables"
+    )
 
-    @validator("name")
+    @field_validator("name")
+    @classmethod
     def validate_name(cls, v):
         """Ensure variable name is valid."""
         if not v or not v.replace("_", "").replace("-", "").isalnum():
-            raise ValueError("Variable name must be alphanumeric with underscores/hyphens")
+            raise ValueError(
+                "Variable name must be alphanumeric with underscores/hyphens"
+            )
         return v.upper()
 
     @property
@@ -48,7 +55,9 @@ class ConfigurationVariable(BaseModel):
 class DatabaseConfig(BaseModel):
     """Database configuration section."""
 
-    adapter: str = Field(default="postgresql", choices=["postgresql", "mysql"])
+    adapter: str = Field(
+        default="postgresql", json_schema_extra={"choices": ["postgresql", "mysql"]}
+    )
     host: str = Field(default="db")
     port: int = Field(default=5432)
     name: str = Field(default="openproject")
@@ -56,7 +65,8 @@ class DatabaseConfig(BaseModel):
     password: str = Field(..., description="Database password")
     encoding: str = Field(default="utf8")
 
-    @validator("port")
+    @field_validator("port")
+    @classmethod
     def validate_port(cls, v):
         if not 1 <= v <= 65535:
             raise ValueError("Port must be between 1 and 65535")
@@ -75,7 +85,8 @@ class ProxyConfig(BaseModel):
     lets_encrypt_email: Optional[str] = Field(None)
     reverse_proxy_enabled: bool = Field(default=True)
 
-    @validator("domain")
+    @field_validator("domain")
+    @classmethod
     def validate_domain(cls, v):
         if not v or "." not in v:
             raise ValueError("Domain must be a valid domain name")
@@ -92,7 +103,8 @@ class StorageConfig(BaseModel):
     backup_retention_days: int = Field(default=30)
     backup_location: str = Field(default="./backups")
 
-    @validator("backup_retention_days")
+    @field_validator("backup_retention_days")
+    @classmethod
     def validate_retention(cls, v):
         if v < 1:
             raise ValueError("Backup retention must be at least 1 day")
@@ -104,7 +116,10 @@ class Configuration(BaseModel):
 
     # Core OpenProject Settings
     secret_key_base: str = Field(..., description="OpenProject secret key")
-    rails_env: str = Field(default="production", choices=["production", "development"])
+    rails_env: str = Field(
+        default="production",
+        json_schema_extra={"choices": ["production", "development"]},
+    )
     rails_cache_store: str = Field(default="memcache")
 
     # Database Configuration
@@ -118,7 +133,8 @@ class Configuration(BaseModel):
 
     # Email Configuration
     email_delivery_method: str = Field(
-        default="smtp", choices=["smtp", "sendmail", "letter_opener"]
+        default="smtp",
+        json_schema_extra={"choices": ["smtp", "sendmail", "letter_opener"]},
     )
     smtp_address: Optional[str] = Field(None)
     smtp_port: Optional[int] = Field(default=587)
@@ -141,21 +157,24 @@ class Configuration(BaseModel):
     session_cookie_secure: bool = Field(default=True)
 
     # Feature Flags
-    attachments_storage: str = Field(default="file", choices=["file", "fog"])
+    attachments_storage: str = Field(
+        default="file", json_schema_extra={"choices": ["file", "fog"]}
+    )
     fog_credentials: Optional[Dict[str, Any]] = Field(None)
 
     # Logging
-    log_level: str = Field(default="info", choices=["debug", "info", "warn", "error"])
+    log_level: str = Field(
+        default="info",
+        json_schema_extra={"choices": ["debug", "info", "warn", "error"]},
+    )
     rails_log_to_stdout: bool = Field(default=True)
 
     # Custom Variables (for extensions)
     custom_variables: Dict[str, str] = Field(default_factory=dict)
 
-    class Config:
-        """Pydantic configuration."""
-
-        extra = "allow"  # Allow additional fields
-        validate_assignment = True
+    model_config = ConfigDict(
+        extra="allow", validate_assignment=True  # Allow additional fields
+    )
 
     def to_cfg_format(self) -> str:
         """Export configuration to .cfg file format."""
@@ -186,7 +205,9 @@ class Configuration(BaseModel):
         lines.append("# Proxy and Security Configuration")
         lines.append(f'DOMAIN="{self.proxy.domain}"')
         if self.proxy.additional_domains:
-            lines.append(f'ADDITIONAL_DOMAINS="{",".join(self.proxy.additional_domains)}"')
+            lines.append(
+                f'ADDITIONAL_DOMAINS="{",".join(self.proxy.additional_domains)}"'
+            )
         lines.append(f'SSL_ENABLED="{str(self.proxy.ssl_enabled).lower()}"')
         if self.proxy.ssl_cert_path:
             lines.append(f'SSL_CERT_PATH="{self.proxy.ssl_cert_path}"')
@@ -241,7 +262,9 @@ class Configuration(BaseModel):
         # Security settings
         lines.append("# Security Settings")
         lines.append(f'FORCE_SSL="{str(self.force_ssl).lower()}"')
-        lines.append(f'SESSION_COOKIE_SECURE="{str(self.session_cookie_secure).lower()}"')
+        lines.append(
+            f'SESSION_COOKIE_SECURE="{str(self.session_cookie_secure).lower()}"'
+        )
         lines.append("")
 
         # URL Configuration
@@ -312,7 +335,9 @@ class Configuration(BaseModel):
             ssl_key_path=config_data.get("SSL_KEY_PATH"),
             lets_encrypt=config_data.get("LETS_ENCRYPT", "true").lower() == "true",
             lets_encrypt_email=config_data.get("LETS_ENCRYPT_EMAIL"),
-            reverse_proxy_enabled=config_data.get("REVERSE_PROXY_ENABLED", "true").lower()
+            reverse_proxy_enabled=config_data.get(
+                "REVERSE_PROXY_ENABLED", "true"
+            ).lower()
             == "true",
         )
 
@@ -335,12 +360,16 @@ class Configuration(BaseModel):
             email_delivery_method=config_data.get("EMAIL_DELIVERY_METHOD", "smtp"),
             smtp_address=config_data.get("SMTP_ADDRESS"),
             smtp_port=(
-                int(config_data.get("SMTP_PORT", 587)) if config_data.get("SMTP_PORT") else 587
+                int(config_data.get("SMTP_PORT", 587))
+                if config_data.get("SMTP_PORT")
+                else 587
             ),
             smtp_domain=config_data.get("SMTP_DOMAIN"),
             smtp_user_name=config_data.get("SMTP_USER_NAME"),
             smtp_password=config_data.get("SMTP_PASSWORD"),
-            smtp_enable_starttls_auto=config_data.get("SMTP_ENABLE_STARTTLS_AUTO", "true").lower()
+            smtp_enable_starttls_auto=config_data.get(
+                "SMTP_ENABLE_STARTTLS_AUTO", "true"
+            ).lower()
             == "true",
             memcached_server=config_data.get("MEMCACHED_SERVER", "cache:11211"),
             redis_url=config_data.get("REDIS_URL"),
@@ -348,12 +377,17 @@ class Configuration(BaseModel):
             web_timeout=int(config_data.get("WEB_TIMEOUT", 60)),
             web_max_requests=int(config_data.get("WEB_MAX_REQUESTS", 1000)),
             force_ssl=config_data.get("FORCE_SSL", "true").lower() == "true",
-            session_cookie_secure=config_data.get("SESSION_COOKIE_SECURE", "true").lower()
+            session_cookie_secure=config_data.get(
+                "SESSION_COOKIE_SECURE", "true"
+            ).lower()
             == "true",
             attachments_storage=config_data.get("ATTACHMENTS_STORAGE", "file"),
             log_level=config_data.get("LOG_LEVEL", "info"),
-            rails_log_to_stdout=config_data.get("RAILS_LOG_TO_STDOUT", "true").lower() == "true",
-            uri_namespace_enabled=config_data.get("URI_NAMESPACE_ENABLED", "false").lower()
+            rails_log_to_stdout=config_data.get("RAILS_LOG_TO_STDOUT", "true").lower()
+            == "true",
+            uri_namespace_enabled=config_data.get(
+                "URI_NAMESPACE_ENABLED", "false"
+            ).lower()
             == "true",
             uri_namespace=config_data.get("URI_NAMESPACE", ""),
         )

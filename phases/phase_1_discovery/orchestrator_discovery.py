@@ -17,21 +17,17 @@ except ImportError:
     PathResolver = None
     PathResolutionError = None
 
-# === GENERATED: STEP_IMPORTS - DO NOT EDIT ===
-# Handle both relative imports (when called by parent) and absolute imports (when run standalone)
-if __name__ == '__main__':
-    # Running standalone - use absolute imports
-    sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-    from phases.phase_1_discovery.step_0_discovery_prompt.discovery_prompt import DiscoveryPromptStep
-    from phases.phase_1_discovery.step_1_env_discovery.env_discovery import EnvDiscoveryStep
-    from phases.phase_1_discovery.step_2_system_discovery.system_discovery import SystemDiscoveryStep
-    from phases.phase_1_discovery.step_3_defaults_generation.defaults_generation import DefaultsGenerationStep
-else:
-    # When imported as module, use relative imports
-    from .step_0_discovery_prompt.discovery_prompt import DiscoveryPromptStep
-    from .step_1_env_discovery.env_discovery import EnvDiscoveryStep
-    from .step_2_system_discovery.system_discovery import SystemDiscoveryStep
-    from .step_3_defaults_generation.defaults_generation import DefaultsGenerationStep
+from phases.phase_1_discovery.step_0_discovery_prompt.discovery_prompt import (
+    DiscoveryPromptStep,
+)
+from phases.phase_1_discovery.step_1_env_discovery.env_discovery import EnvDiscoveryStep
+from phases.phase_1_discovery.step_2_system_discovery.system_discovery import (
+    SystemDiscoveryStep,
+)
+from phases.phase_1_discovery.step_3_defaults_generation.defaults_generation import (
+    DefaultsGenerationStep,
+)
+
 # === END GENERATED: STEP_IMPORTS ===
 
 # Infrastructure imports (preserved, not regenerated)
@@ -54,84 +50,88 @@ class DiscoveryPhase:
     """
     Discovery Phase
     Status: IMPLEMENTED
-    
+
     Discover system environment and generate intelligent defaults
-    
+
     Artifacts Consumed: None
     Artifacts Produced: enhanced_defaults_file
     """
-    
+
     def __init__(
         self,
         project_root: Path,
         ui=None,
-        mode: str = 'hardcoded',
+        mode: str = "hardcoded",
         spec_file: Optional[Path] = None,
-        phase_spec: Optional[Dict[str, Any]] = None
+        phase_spec: Optional[Dict[str, Any]] = None,
     ):
         self.project_root = project_root
         self.ui = ui
         self.mode = mode
-        self.spec_file = spec_file or self.project_root / "design_specs/control_flows.yml"
+        self.spec_file = (
+            spec_file or self.project_root / "design_specs/control_flows.yml"
+        )
         self.phase_spec = phase_spec
         self.phase_dir = project_root / "phases/phase_1_discovery"
-        
+
         # Initialize PathResolver for artifact and unit resolution
         if PathResolver:
             try:
                 self.path_resolver = PathResolver.from_execution_context(__file__)
-                logger.debug(f"PathResolver initialized: {self.path_resolver.get_project_root()}")
+                logger.debug(
+                    f"PathResolver initialized: {self.path_resolver.get_project_root()}"
+                )
             except Exception as e:
                 logger.warning(f"Could not initialize PathResolver: {e}")
                 self.path_resolver = None
         else:
             self.path_resolver = None
-        
+
     def _execute_dynamic(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Execute phase using YAML specification (dynamic mode).
-        
+
         Reads steps from phase_spec['steps'] and executes them in sequence.
         """
         if not self.phase_spec:
             logger.warning("No phase spec available, falling back to hardcoded mode")
             return self._execute_hardcoded(context)
-        
+
         logger.info("Using YAML-driven execution")
-        result = {'artifacts': {}}
-        
-        for step_spec in self.phase_spec.get('steps', []):
-            step_id = step_spec['step_id']
-            step_status = step_spec.get('status', 'PLANNED')
-            
-            if step_status in ['PLANNED', 'SKIPPED']:
+        result = {"artifacts": {}}
+
+        for step_spec in self.phase_spec.get("steps", []):
+            step_id = step_spec["step_id"]
+            step_status = step_spec.get("status", "PLANNED")
+
+            if step_status in ["PLANNED", "SKIPPED"]:
                 logger.info(f"Skipping step {step_id} (status: {step_status})")
                 continue
-            
+
             logger.info(f"Executing step: {step_id}")
-            
-            if 'units' in step_spec and step_spec['units']:
+
+            if "units" in step_spec and step_spec["units"]:
                 step_result = self._execute_step_with_units(step_spec, context)
             else:
                 step_result = self._execute_step_traditional(step_spec, context)
-            
+
             if step_result:
                 context.update(step_result.get("artifacts", {}))
                 result["artifacts"].update(step_result.get("artifacts", {}))
-        
+
         return self._build_result(result, context)
-    
+
     def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Execute Discovery Phase.
-        
+
         Supports two execution modes:
         1. hardcoded (default): Uses static step execution logic
         2. dynamic: Reads steps from YAML and executes dynamically
-        
+
         Args:
             context: Execution context with consumed artifacts
-            
+
         Returns:
             Dict with produced artifacts
         """
@@ -139,96 +139,110 @@ class DiscoveryPhase:
             return self._execute_dynamic(context)
         else:
             return self._execute_hardcoded(context)
-    
+
     def _execute_hardcoded(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Hardcoded execution mode (original implementation)."""
         if self.ui:
-            self.ui.show_phase_header("Discovery Phase", "Discover system environment and generate intelligent defaults")
-        
+            self.ui.show_phase_header(
+                "Discovery Phase",
+                "Discover system environment and generate intelligent defaults",
+            )
+
         logger.info("Executing Discovery Phase")
-        
-        result = {'artifacts': {}}
-        
+
+        result = {"artifacts": {}}
+
         # === GENERATED: STEP_EXECUTION - DO NOT EDIT ===
-# Step 1: Ask user whether to use automatic system discovery or manual configuration
-        logger.info("Step 1: Ask user whether to use automatic system discovery or manual configuration")
+        # Step 1: Ask user whether to use automatic system discovery or manual configuration
+        logger.info(
+            "Step 1: Ask user whether to use automatic system discovery or manual configuration"
+        )
         step_1 = DiscoveryPromptStep(self.project_root, self.ui)
         step_result = step_1.execute(context)
         context.update(step_result.get("artifacts", {}))
         result["artifacts"].update(step_result.get("artifacts", {}))
-        
+
         # Step 2: Discover environment variables and system paths
         logger.info("Step 2: Discover environment variables and system paths")
         step_2 = EnvDiscoveryStep(self.project_root, self.ui)
         step_result = step_2.execute(context)
         context.update(step_result.get("artifacts", {}))
         result["artifacts"].update(step_result.get("artifacts", {}))
-        
+
         # Step 3: Discover system information, Docker, and network configuration
-        logger.info("Step 3: Discover system information, Docker, and network configuration")
+        logger.info(
+            "Step 3: Discover system information, Docker, and network configuration"
+        )
         step_3 = SystemDiscoveryStep(self.project_root, self.ui)
         step_result = step_3.execute(context)
         context.update(step_result.get("artifacts", {}))
         result["artifacts"].update(step_result.get("artifacts", {}))
-        
+
         # Step 4: Generate enhanced defaults from discovered system information
-        logger.info("Step 4: Generate enhanced defaults from discovered system information")
+        logger.info(
+            "Step 4: Generate enhanced defaults from discovered system information"
+        )
         step_4 = DefaultsGenerationStep(self.project_root, self.ui)
         step_result = step_4.execute(context)
         context.update(step_result.get("artifacts", {}))
         result["artifacts"].update(step_result.get("artifacts", {}))
-        
-# === END GENERATED: STEP_EXECUTION ===
-        
+
+        # === END GENERATED: STEP_EXECUTION ===
+
         # Build result from collected artifacts
         return {
-            'artifacts': result['artifacts'],
-            'enhanced_defaults_file': context.get('enhanced_defaults_file'),
-            'enhanced_defaults': context.get('enhanced_defaults'),
-            'environment_data': context.get('environment_data'),
-            'system_data': context.get('system_data'),
-            'docker_data': context.get('docker_data'),
-            'network_data': context.get('network_data'),
-            'discovery_summary': {
-                'environment_variables': len(context.get('environment_data', {}).get('all_vars', {})),
-                'system_info': 'collected' if context.get('system_data') else 'not collected',
-                'docker_info': 'collected' if context.get('docker_data') else 'unavailable',
-                'network_info': 'collected' if context.get('network_data') else 'not collected',
-                'defaults_generated': len(context.get('enhanced_defaults', {}))
-            }
+            "artifacts": result["artifacts"],
+            "enhanced_defaults_file": context.get("enhanced_defaults_file"),
+            "enhanced_defaults": context.get("enhanced_defaults"),
+            "environment_data": context.get("environment_data"),
+            "system_data": context.get("system_data"),
+            "docker_data": context.get("docker_data"),
+            "network_data": context.get("network_data"),
+            "discovery_summary": {
+                "environment_variables": len(
+                    context.get("environment_data", {}).get("all_vars", {})
+                ),
+                "system_info": (
+                    "collected" if context.get("system_data") else "not collected"
+                ),
+                "docker_info": (
+                    "collected" if context.get("docker_data") else "unavailable"
+                ),
+                "network_info": (
+                    "collected" if context.get("network_data") else "not collected"
+                ),
+                "defaults_generated": len(context.get("enhanced_defaults", {})),
+            },
         }
 
-
     def _execute_step_with_units(
-        self,
-        step_spec: Dict[str, Any],
-        context: Dict[str, Any]
+        self, step_spec: Dict[str, Any], context: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Execute a step by dynamically loading and calling units from YAML.
-        
+
         Args:
             step_spec: Step specification from YAML
             context: Execution context
-            
+
         Returns:
             Dict with step results
         """
         import importlib
-        
-        step_id = step_spec['step_id']
-        units = step_spec.get('units', [])
-        
+
+        step_id = step_spec["step_id"]
+        units = step_spec.get("units", [])
+
         logger.info(f"Step {step_id} has {len(units)} units")
-        
+
         step_results = {}
-        
+
         for unit_spec in units:
-            unit_id = unit_spec['unit_id']
-            library = unit_spec['library']
-            class_name = unit_spec['class']
-            method_name = unit_spec['method']
-            
+            unit_id = unit_spec["unit_id"]
+            library = unit_spec["library"]
+            class_name = unit_spec["class"]
+            method_name = unit_spec["method"]
+
             try:
                 # Dynamic import: from phases.libraries.{library} import {class}
                 # Use PathResolver if available for library path resolution
@@ -240,152 +254,163 @@ class DiscoveryPhase:
                     module_path = f"phases.libraries.{library}"
                 module = importlib.import_module(module_path)
                 unit_class = getattr(module, class_name)
-                
+
                 # Instantiate and call method
                 unit_instance = unit_class()
                 method = getattr(unit_instance, method_name)
                 result = method(context)
-                
+
                 logger.info(f"Unit {unit_id} executed successfully")
                 step_results[unit_id] = result
-                
+
             except (ImportError, AttributeError) as e:
                 logger.warning(f"Could not load unit {unit_id}: {e}")
                 # Mock execution for unimplemented units
                 step_results[unit_id] = self._mock_unit_execution(unit_spec)
             except Exception as e:
                 logger.error(f"Error executing unit {unit_id}: {e}")
-                step_results[unit_id] = {'error': str(e), 'status': 'failed'}
-        
-        return {'artifacts': step_results}
-    
+                step_results[unit_id] = {"error": str(e), "status": "failed"}
+
+        return {"artifacts": step_results}
+
     def _execute_step_traditional(
-        self,
-        step_spec: Dict[str, Any],
-        context: Dict[str, Any]
+        self, step_spec: Dict[str, Any], context: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Execute a step using the traditional Step class approach.
-        
+
         Falls back to importing and calling the Step class if no units defined.
-        
+
         Args:
             step_spec: Step specification from YAML
             context: Execution context
-            
+
         Returns:
             Dict with step results
         """
-        step_id = step_spec['step_id']
-        
+        step_id = step_spec["step_id"]
+
         # Try to dynamically load the step class
         # This is a fallback - ideally all phases should use the step_class_map
         logger.warning(f"Step {step_id} has no units, attempting traditional execution")
-        
+
         # Return empty result - the step should be handled by _execute_hardcoded
-        return {'artifacts': {}}
-    
+        return {"artifacts": {}}
+
     def _mock_unit_execution(self, unit_spec: Dict[str, Any]) -> Dict[str, Any]:
         """
         Mock execution for units that don't exist yet.
-        
+
         Args:
             unit_spec: Unit specification from YAML
-            
+
         Returns:
             Mock execution result
         """
-        logger.info(f"MOCK: Executing {unit_spec['library']}.{unit_spec['class']}.{unit_spec['method']}()")
+        logger.info(
+            f"MOCK: Executing {unit_spec['library']}.{unit_spec['class']}.{unit_spec['method']}()"
+        )
         return {
-            'status': 'mocked',
-            'unit': unit_spec['unit_id'],
-            'message': f"Mock execution of {unit_spec['class']}.{unit_spec['method']}()"
+            "status": "mocked",
+            "unit": unit_spec["unit_id"],
+            "message": f"Mock execution of {unit_spec['class']}.{unit_spec['method']}()",
         }
-    
-    def _build_result(self, result: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+
+    def _build_result(
+        self, result: Dict[str, Any], context: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Build final result dictionary using PathResolver for artifact paths.
-        
+
         Args:
             result: Accumulated results
             context: Execution context
-            
+
         Returns:
             Final result dictionary with resolved paths
         """
-        final_result = {'artifacts': result.get('artifacts', {})}
-        
+        final_result = {"artifacts": result.get("artifacts", {})}
+
         # Add all context keys to result
         for key, value in context.items():
             if key not in final_result:
                 final_result[key] = value
-        
+
         # Use PathResolver to validate artifact paths if available
         if self.path_resolver:
-            for artifact_id in final_result.get('artifacts', {}).keys():
+            for artifact_id in final_result.get("artifacts", {}).keys():
                 try:
                     # Validate artifact is accessible
                     accessible = self.path_resolver.validate_artifact_accessible(
-                        artifact_id, 
-                        mode='write'
+                        artifact_id, mode="write"
                     )
                     if accessible:
-                        logger.debug(f"Artifact '{artifact_id}' path validated by PathResolver")
+                        logger.debug(
+                            f"Artifact '{artifact_id}' path validated by PathResolver"
+                        )
                 except Exception as e:
                     logger.debug(f"Could not validate artifact '{artifact_id}': {e}")
-        
+
         return final_result
+
 
 def main():
     """Standalone entry point for testing Phase 1."""
     import argparse
     import sys
-    
+
     parser = argparse.ArgumentParser(description="Phase 1: Discovery Phase")
-    parser.add_argument('--output-dir', help='Output directory for results', default='phases/phase_1_discovery/outputs')
-    parser.add_argument('--verbose', action='store_true', help='Enable verbose logging')
-    parser.add_argument('--dynamic', action='store_true', help='Use YAML-driven execution mode')
-    
+    parser.add_argument(
+        "--output-dir",
+        help="Output directory for results",
+        default="phases/phase_1_discovery/outputs",
+    )
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
+    parser.add_argument(
+        "--dynamic", action="store_true", help="Use YAML-driven execution mode"
+    )
+
     args = parser.parse_args()
-    
+
     # Setup logging
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
-    
+
     # Setup paths
     project_root = Path(__file__).parent.parent.parent
-    
+
     # Create phase instance with mode
-    mode = 'dynamic' if args.dynamic else 'hardcoded'
+    mode = "dynamic" if args.dynamic else "hardcoded"
     phase = DiscoveryPhase(project_root=project_root, mode=mode)
-    
+
     try:
         # Execute phase with empty context
         context = {}
         result = phase.execute(context)
-        
+
         print("\n" + "=" * 70)
         print("✅ PHASE 1 COMPLETE: Discovery")
         print("=" * 70)
         print(f"\nMode: {mode}")
         print(f"\n📊 Discovery Summary:")
-        for key, value in result.get('discovery_summary', {}).items():
+        for key, value in result.get("discovery_summary", {}).items():
             print(f"  • {key}: {value}")
-        if 'enhanced_defaults_file' in result:
+        if "enhanced_defaults_file" in result:
             print(f"\n📁 Enhanced defaults saved to:")
             print(f"  {result['enhanced_defaults_file']}")
         print("\n✅ Ready for Phase 2: TUI Mapping")
-        
+
         return 0
-        
+
     except Exception as e:
         print(f"\n❌ Phase 1 failed: {e}")
         import traceback
+
         traceback.print_exc()
         return 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     exit(main())

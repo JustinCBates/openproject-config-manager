@@ -7,10 +7,6 @@ Demonstrates inserting discovery_prompt step into discovery phase.
 import sys
 from pathlib import Path
 
-# Add control-flow to path
-control_flow_path = Path(__file__).parent.parent.parent / "control-flow" / "src"
-sys.path.insert(0, str(control_flow_path))
-
 import json
 
 import yaml
@@ -120,7 +116,9 @@ def test_insert_discovery_prompt():
     scaffolder = ScaffoldGenerator(project_root)
 
     phase_dir = project_root / "phases" / "phase_1_discovery"
-    created_files = scaffolder.create_step_scaffolding(step=new_step_insertion, base_path=phase_dir)
+    created_files = scaffolder.create_step_scaffolding(
+        step=new_step_insertion, base_path=phase_dir
+    )
 
     print(f"\n✅ Created files:")
     for file_type, file_path in created_files.items():
