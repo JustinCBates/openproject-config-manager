@@ -116,7 +116,9 @@ def test_insert_discovery_prompt():
     scaffolder = ScaffoldGenerator(project_root)
 
     phase_dir = project_root / "phases" / "phase_1_discovery"
-    created_files = scaffolder.create_step_scaffolding(step=new_step_insertion, base_path=phase_dir)
+    created_files = scaffolder.create_step_scaffolding(
+        step=new_step_insertion, base_path=phase_dir
+    )
 
     print(f"\n✅ Created files:")
     for file_type, file_path in created_files.items():

@@ -94,7 +94,9 @@ class TestValidationPhaseIntegration(unittest.TestCase):
         self.assertIsNotNone(self.mock_ui)
 
         # Simulate UI interactions
-        self.mock_ui.show_phase_header("Validation Phase", "Validate collected configuration")
+        self.mock_ui.show_phase_header(
+            "Validation Phase", "Validate collected configuration"
+        )
         self.mock_ui.show_phase_header.assert_called_once()
 
 

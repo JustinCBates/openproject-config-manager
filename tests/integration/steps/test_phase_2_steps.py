@@ -93,7 +93,8 @@ class TestTuiMappingPhaseIntegration(unittest.TestCase):
 
         # Simulate UI interactions
         self.mock_ui.show_phase_header(
-            "TUI Defaults Mapping", "Transform rich enhanced defaults to simple TUI format"
+            "TUI Defaults Mapping",
+            "Transform rich enhanced defaults to simple TUI format",
         )
         self.mock_ui.show_phase_header.assert_called_once()
 

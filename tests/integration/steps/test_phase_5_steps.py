@@ -92,7 +92,9 @@ class TestExportPhaseIntegration(unittest.TestCase):
         self.assertIsNotNone(self.mock_ui)
 
         # Simulate UI interactions
-        self.mock_ui.show_phase_header("Export Phase", "Export final configuration files")
+        self.mock_ui.show_phase_header(
+            "Export Phase", "Export final configuration files"
+        )
         self.mock_ui.show_phase_header.assert_called_once()
 
 
