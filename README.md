@@ -2,9 +2,6 @@
 
 Interactive configuration management for Docker Compose projects with intelligent discovery and live validation.
 
-**Version**: 2.0.0  
-**Dual-Mode Support**: Development & Production
-
 ## Features
 
 - **Auto-Discovery**: Automatically detects OS, network configuration, Docker installation, available ports, and existing certificates
@@ -13,7 +10,6 @@ Interactive configuration management for Docker Compose projects with intelligen
 - **Configuration Persistence**: Generates `.env` and `.cfg` files for deployment
 - **Resumable Sessions**: Can resume interrupted configuration sessions
 - **Template Support**: Supports predefined configuration templates for common scenarios
-- **Dual-Mode Operation**: Works in both development (git submodule) and production (pip package) environments
 
 ## Purpose
 
@@ -21,90 +17,34 @@ This is a generic, reusable configuration tool designed to work with any Docker 
 
 ## Installation
 
-### Production Mode (Pip Package)
-
 ```bash
 pip install openproject-config-manager
 ```
 
-### Development Mode (Git Submodule)
+Or install from source:
 
 ```bash
 git clone https://github.com/JustinCBates/openproject-config-manager.git
 cd openproject-config-manager
-pip install -e ".[dev]"
+pip install -e .
 ```
 
 ## Usage
 
-### Production Mode (Explicit Paths)
-
-When installed as a pip package and called by an orchestrator:
-
-```python
-from pathlib import Path
-from openproject_config_manager import ConfigurationManager
-
-# Orchestrator provides paths
-config_manager = ConfigurationManager(
-    output_dir=Path("/opt/openproject/config"),
-    cache_dir=Path("/opt/openproject/.openproject/cache"),
-    flows_dir=Path("/opt/openproject/.openproject/flows")  # Optional
-)
-
-result = config_manager.run_interactive(
-    template="openproject",
-    prober_enabled=True
-)
-
-# Configuration files written to output_dir:
-# - /opt/openproject/config/interactive_config.cfg
-# - /opt/openproject/config/.env
-print(f"Configuration saved to {result.env_path}")
-```
-
-### Development Mode (Auto-Detected)
-
-When running from git repository (development):
+### Basic Usage
 
 ```python
 from openproject_config_manager import ConfigurationManager
 
-# Auto-detects development mode (uses local ./output/ and ./cache/)
+# Run interactive configuration
 config_manager = ConfigurationManager()
 result = config_manager.run_interactive(
-    template="openproject",
+    template="docker-compose",
     prober_enabled=True
 )
 
 # Result includes paths to generated files
 print(f"Configuration saved to {result.env_path}")
-```
-
-### Force Development Mode
-
-```python
-# Explicitly force development mode
-config_manager = ConfigurationManager(use_local_paths=True)
-```
-
-Or via environment variable:
-
-```bash
-export OPENPROJECT_DEV_MODE=1
-```
-
-### Custom Paths in Development
-
-```python
-from pathlib import Path
-
-# Override default paths even in development mode
-config_manager = ConfigurationManager(
-    output_dir=Path("/custom/output"),
-    cache_dir=Path("/custom/cache"),
-    use_local_paths=True
-)
 ```
 
 ### Command Line Interface
@@ -130,59 +70,19 @@ config-manager validate
 
 ### Control Flow
 
-The Configuration Manager follows a **4-phase control flow** designed for maximum automation and validation:
-
-#### **Phase 1: Environment Discovery & Probing**
 ```
-OS Probe → Generate .cfg.defaults
-├── Detect OS (Linux distro, version, architecture)  
-├── Scan network interfaces & available IPs
-├── Check Docker installation & version
-├── Scan available ports (80, 443, 8080, etc.)
-├── Detect existing SSL certificates
-├── Check system resources (RAM, disk space)
-└── Write .cfg.defaults with intelligent defaults
+User Input
+    ↓
+Discovery Engine (auto-detect environment)
+    ↓
+Interactive Collector (Rich UI for user input with smart defaults)
+    ↓
+Validation Engine (validate completeness + live testing with prober)
+    ↓
+Configuration Finalizer (generate .env and .cfg files)
+    ↓
+Configuration Output (.env, .cfg)
 ```
-
-#### **Phase 2: Interactive Configuration Collection**
-```
-Rich Interactive UI → Generate .cfg
-├── Load .cfg.defaults as starting point
-├── Present Rich-based prompts with smart defaults
-├── Collect user preferences:
-│   ├── Domain name & SSL preferences
-│   ├── Port configurations  
-│   ├── Database settings
-│   ├── Email/IMAP configuration
-│   └── Advanced options (if requested)
-├── Real-time validation during input
-└── Save final .cfg file
-```
-
-#### **Phase 3: Pre-Deploy Validation**  
-```
-Validation Pass → Prober Integration
-├── Load .cfg file
-├── Validate configuration completeness
-├── Use Prober utility for live testing:
-│   ├── DNS resolution checks
-│   ├── Port availability testing
-│   ├── SSL certificate validation
-│   └── Network connectivity tests
-├── Present validation results
-└── Option to loop back to Phase 2 if issues found
-```
-
-#### **Phase 4: Final Configuration Export**
-```
-Export for Deployment
-├── Convert .cfg to .env format
-├── Generate Docker Compose overrides
-├── Prepare Jinja2 template variables
-└── Hand off to Deploy Manager
-```
-
-**Key Design Principle**: The user can loop between Phases 2 and 3 until all validation passes, ensuring a bulletproof configuration before deployment.
 
 ### Components
 
@@ -246,33 +146,11 @@ Export for Deployment
 #### 5. Configuration Finalizer (`finalizer.py`)
 **Purpose**: Generate final configuration files
 
-**Primary Output**: `interactive_config.cfg` file
-- **Format**: Bash-style key="value" pairs
-- **Content**: Complete deployment configuration
-- **Usage**: Consumed by Deployment Manager for build process
-
-**Secondary Outputs**:
-- `.env` file (Docker Compose environment variables)
-- Template variables (for Jinja2 rendering)
-- Configuration backup and metadata
-
-**Configuration File Structure**:
-```bash
-# interactive_config.cfg
-# Core OpenProject Configuration
-DOMAIN_NAME="myproject.example.com"
-OPENPROJECT_HTTPS="true"
-PORT="8080"
-
-# Database Configuration  
-DATABASE_URL="postgres://..."
-POSTGRES_PASSWORD="secure_password"
-
-# Deployment Settings
-PROXY_TYPE="caddy"
-PROBER_ENABLED="true"
-# ... (see interactive_config.cfg.example for complete format)
-```
+**Actions**:
+- Backup existing configurations
+- Merge discovery results + user input + validation fixes
+- Generate `.env` file (environment variables)
+- Generate `.cfg` file (configuration metadata)
 - Provide next-step instructions
 
 #### 6. Core Configuration (`core.py`)
@@ -322,40 +200,36 @@ PROBER_ENABLED="true"
 
 ## Dependencies
 
-### Production (End Users)
+### Required Dependencies
 
-**Required:**
-- `click>=8.1.0` - CLI framework
-- `rich>=13.0.0` - Terminal UI/formatting
-- `pydantic>=2.0.0` - Data validation
-- `python-dotenv>=1.0.0` - Environment variables
-- `pyyaml>=6.0.0` - YAML parsing
+```toml
+dependencies = [
+    "python-dotenv>=1.0.0",    # .env file handling
+    "pyyaml>=6.0",              # .cfg file handling
+    "rich>=13.0.0",             # Terminal UI
+    "docker>=7.0.0",            # Docker SDK
+    "click>=8.1.0",             # CLI framework
+]
+```
 
-**Optional Features:**
-- `docker>=7.0.0` - Docker integration (if using docker features)
-- `requests>=2.31.0` - HTTP requests (if using external services)
-- `psutil>=5.9.0` - System monitoring (if using system discovery)
-- `cryptography>=41.0.0` - SSL/crypto (if generating certificates)
-- `netifaces>=0.11.0` - Network interfaces (if doing network discovery)
+### External Dependencies
 
-### Development (Contributors)
+- **docker-prober-utility**: Live validation of HTTP/HTTPS endpoints
+  ```toml
+  docker-prober-utility @ git+https://github.com/JustinCBates/docker_prober_utility.git@main
+  ```
 
-**Required:**
-- `pytest>=7.0.0` - Testing framework
-- `pytest-json-report` - Test reporting
-- `black>=23.0.0` - Code formatting
-- `flake8>=6.0.0` - Code linting
-- `mypy>=1.0.0` - Type checking
+### Development Dependencies
 
-**Optional Tools:**
-- `pytest-cov>=4.0.0` - Test coverage (if doing coverage analysis)
-- `pytest-mock>=3.11.0` - Test mocking (if doing advanced testing)
-- `bandit>=1.7.0` - Security linting (if doing security analysis)
-- `safety>=2.3.0` - Security scanning (if scanning dependencies)
-- `sphinx>=5.0.0` - Documentation (if generating docs)
-- `git` - Version control
-- `python>=3.8` - Python runtime
-
+```toml
+dev-dependencies = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+]
+```
 
 ## Development
 
@@ -372,115 +246,15 @@ pip install -e ".[dev]"
 
 ### Testing
 
-Tests are organized by operation mode:
-
 ```bash
-# Run all tests
+# Run tests
 pytest
-
-# Test development mode
-pytest tests/test_development_mode.py -v
-
-# Test production mode
-pytest tests/test_production_mode.py -v
 
 # Run tests with coverage
 pytest --cov=openproject_config_manager --cov-report=term-missing
 
 # Run specific test
 pytest tests/test_discovery.py
-```
-
-## Environment Variables
-
-| Variable | Values | Effect |
-|----------|--------|--------|
-| `OPENPROJECT_DEV_MODE` | `1`, `true`, `yes` | Force development mode (use local paths) |
-
-**Examples**:
-
-```bash
-# Force development mode
-export OPENPROJECT_DEV_MODE=1
-python -c "from openproject_config_manager import ConfigurationManager; mgr = ConfigurationManager()"
-# Uses ./output/ and ./cache/
-
-# Production mode (default when installed via pip)
-unset OPENPROJECT_DEV_MODE
-python -c "from openproject_config_manager import ConfigurationManager; mgr = ConfigurationManager(output_dir='/opt/openproject/config')"
-# Uses /opt/openproject/config/
-```
-
-## Mode Detection
-
-The Configuration Manager auto-detects its operating mode:
-
-1. **Environment Variable Check**: If `OPENPROJECT_DEV_MODE=1`, use development mode
-2. **Git Repository Check**: If `.git` directory exists in parent paths, use development mode
-3. **Site-Packages Check**: If running from `site-packages/`, use production mode
-4. **Default**: Development mode
-
-**Override Detection**:
-
-```python
-# Force production mode even in development
-mgr = ConfigurationManager(
-    output_dir=Path("/opt/openproject/config"),
-    use_local_paths=False  # Explicitly disable auto-detection
-)
-
-# Force development mode even when installed
-mgr = ConfigurationManager(use_local_paths=True)
-```
-
-## API Reference
-
-### ConfigurationManager
-
-```python
-class ConfigurationManager:
-    def __init__(
-        self,
-        project_root: Optional[str] = None,          # Legacy (deprecated)
-        config_file: Optional[str] = None,           # Existing config to load
-        output_dir: Optional[Path] = None,           # Where to write .env, .cfg
-        cache_dir: Optional[Path] = None,            # Where to cache discovery
-        flows_dir: Optional[Path] = None,            # TUI flow layouts
-        use_local_paths: Optional[bool] = None,      # Force dev/prod mode
-        verbose: bool = False                        # Enable debug logging
-    ):
-        """
-        Initialize Configuration Manager.
-        
-        Production Mode (output_dir required):
-            mgr = ConfigurationManager(
-                output_dir=Path("/opt/openproject/config")
-            )
-        
-        Development Mode (auto-detected):
-            mgr = ConfigurationManager()
-        """
-```
-
-### Methods
-
-```python
-def run_interactive(
-    self,
-    template: str = "openproject",
-    prober_enabled: bool = True,
-    resume: bool = False
-) -> ConfigResult:
-    """
-    Run interactive configuration workflow.
-    
-    Returns:
-        ConfigResult with:
-        - success: bool
-        - config_file: Path to .cfg file
-        - env_file: Path to .env file
-        - configuration: Dict of final config
-    """
 ```
 
 ### Code Quality
