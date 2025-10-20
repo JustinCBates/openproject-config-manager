@@ -49,9 +49,11 @@ else:
 
 # Import the lightweight TUI Form Engine renderer (end-user interface)
 try:
-    from tui_form_engine.renderer import FormRenderer
-    from tui_form_engine.core.exceptions import FlowValidationError, FlowExecutionError
-    from tui_form_engine.preprocessing import LayoutPreprocessor, DefaultsPreprocessor
+    from src.openproject_config_manager.tui_adapter import FormRenderer
+    from tui_form_designer.core.exceptions import FlowValidationError, FlowExecutionError
+    # Preprocessors not available in consolidated package; disable advanced features gracefully
+    LayoutPreprocessor = None
+    DefaultsPreprocessor = None
     TUI_ENGINE_AVAILABLE = True
 except ImportError:
     TUI_ENGINE_AVAILABLE = False

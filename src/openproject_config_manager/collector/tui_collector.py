@@ -7,17 +7,20 @@ and then validates/transforms it for deployment.
 """
 
 import json
+import logging
 from pathlib import Path
 from typing import Any, Dict
 
 import yaml
-from tui_form_engine.core.exceptions import FlowExecutionError, FlowValidationError
+from tui_form_designer.core.exceptions import FlowExecutionError, FlowValidationError
 
-# Import the lightweight TUI Form Engine renderer (end-user interface)
-from tui_form_engine.renderer import FormRenderer
+# Import compatibility renderer adapter backed by FlowEngine
+from ..tui_adapter import FormRenderer
 
 from ..core.config import Configuration
 from ..core.manager import ConfigurationManager
+
+logger = logging.getLogger(__name__)
 
 
 class OpenProjectConfigCollector:
@@ -69,10 +72,10 @@ class OpenProjectConfigCollector:
             FlowExecutionError: If flow execution fails
             ValueError: If configuration validation fails
         """
-        print(f"🎯 Starting OpenProject configuration collection...")
+        logger.info("🎯 Starting OpenProject configuration collection...")
 
         # Step 1: Execute TUI flow to collect user input using renderer
-        print(f"📋 Executing flow: {flow_name}")
+        logger.info(f"📋 Executing flow: {flow_name}")
         try:
             flow_path = self.flows_dir / f"{flow_name}.yml"
             flow_response = self.renderer.render_flow(
@@ -80,22 +83,22 @@ class OpenProjectConfigCollector:
             )
             user_responses = flow_response["responses"]
         except (FlowValidationError, FlowExecutionError) as e:
-            print(f"❌ Flow execution failed: {e}")
+            logger.error(f"❌ Flow execution failed: {e}")
             raise
 
         # Step 2: Save raw user responses
         responses_file = self.output_dir / f"{flow_name}_responses.json"
         with open(responses_file, "w") as f:
             json.dump(user_responses, f, indent=2)
-        print(f"💾 User responses saved: {responses_file}")
+        logger.info(f"💾 User responses saved: {responses_file}")
 
         # Step 3: Validate and transform using ConfigurationManager (optional)
         if skip_validation:
-            print(f"⚠️  Skipping configuration validation...")
+            logger.warning("⚠️  Skipping configuration validation...")
             # Create a simple config structure for deploy-manager
             final_config = self._generate_simple_deploy_config(user_responses)
         else:
-            print(f"🔍 Validating configuration...")
+            logger.info("🔍 Validating configuration...")
             try:
                 # Convert responses to Configuration object
                 config = self._transform_responses_to_config(user_responses)
@@ -104,25 +107,25 @@ class OpenProjectConfigCollector:
                 validation_result = self.config_manager.validator.validate_configuration(config)
 
                 if not validation_result.is_valid:
-                    print(f"❌ Configuration validation failed:")
+                    logger.error("❌ Configuration validation failed:")
                     for error in validation_result.errors:
-                        print(f"  - {error}")
+                        logger.error(f"  - {error}")
                     raise ValueError("Configuration validation failed")
 
                 # Step 4: Generate final configuration for deploy-manager
                 final_config = self._generate_deploy_config(config, user_responses)
 
             except Exception as e:
-                print(f"❌ Configuration validation failed: {e}")
+                logger.error(f"❌ Configuration validation failed: {e}")
                 raise
 
         # Step 5: Save final configuration
         config_file = self.output_dir / f"openproject_config.json"
         with open(config_file, "w") as f:
             json.dump(final_config, f, indent=2)
-        print(f"✅ Final configuration saved: {config_file}")
+        logger.info(f"✅ Final configuration saved: {config_file}")
 
-        print(f"🎉 Configuration collection complete!")
+        logger.info("🎉 Configuration collection complete!")
         return final_config
 
     def _transform_responses_to_config(self, responses: Dict[str, Any]) -> Configuration:
@@ -253,7 +256,7 @@ class OpenProjectConfigCollector:
 
     def test_flow(self, flow_name: str, mock_responses: Dict[str, Any]) -> Dict[str, Any]:
         """Test flow execution with mock responses (for development/CI)."""
-        print(f"🧪 Testing flow: {flow_name}")
+        logger.info(f"🧪 Testing flow: {flow_name}")
 
         try:
             # Execute flow with mocks using renderer
@@ -267,11 +270,11 @@ class OpenProjectConfigCollector:
             config = self._transform_responses_to_config(result)
             final_config = self._generate_deploy_config(config, result)
 
-            print(f"✅ Flow test successful")
+            logger.info("✅ Flow test successful")
             return final_config
 
         except Exception as e:
-            print(f"❌ Flow test failed: {e}")
+            logger.error(f"❌ Flow test failed: {e}")
             raise
 
 
@@ -279,6 +282,12 @@ def main():
     """Main entry point for interactive configuration collection."""
     import argparse
     import sys
+
+    # Configure logging for CLI usage
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(message)s"  # Simple format for user-facing CLI
+    )
 
     parser = argparse.ArgumentParser(description="OpenProject Configuration Collector")
     parser.add_argument(
@@ -293,8 +302,17 @@ def main():
         action="store_true",
         help="Skip configuration validation (useful for testing layouts)",
     )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Enable verbose logging",
+    )
 
     args = parser.parse_args()
+
+    # Adjust logging level if verbose
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
 
     # Load mock responses if provided
     mock_responses = None
@@ -303,7 +321,7 @@ def main():
             with open(args.mock_file, "r") as f:
                 mock_responses = json.load(f)
         except Exception as e:
-            print(f"❌ Failed to load mock file: {e}")
+            logger.error(f"❌ Failed to load mock file: {e}")
             return 1
 
     collector = OpenProjectConfigCollector()
@@ -314,16 +332,18 @@ def main():
             args.flow_name, mock_responses, skip_validation=args.skip_validation
         )
 
-        print(f"\n🎉 Configuration collection complete!")
-        print(f"📁 Files generated:")
-        print(f"  - User responses: outputs/{args.flow_name}_responses.json")
-        print(f"  - Final config: outputs/openproject_config.json")
+        logger.info("\n🎉 Configuration collection complete!")
+        logger.info("📁 Files generated:")
+        logger.info(f"  - User responses: outputs/{args.flow_name}_responses.json")
+        logger.info(f"  - Final config: outputs/openproject_config.json")
         if args.skip_validation:
-            print(f"⚠️  Note: Validation was skipped - configuration is for testing only")
-        print(f"\n✅ Ready for deployment with deploy-manager!")
+            logger.warning("⚠️  Note: Validation was skipped - configuration is for testing only")
+        logger.info("\n✅ Ready for deployment with deploy-manager!")
 
     except Exception as e:
-        print(f"\n❌ Configuration collection failed: {e}")
+        logger.error(f"\n❌ Configuration collection failed: {e}")
+        if args.verbose:
+            logger.exception("Full traceback:")
         return 1
 
     return 0

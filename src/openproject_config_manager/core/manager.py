@@ -12,8 +12,8 @@ _tui_engine_path = Path(__file__).parent.parent.parent.parent.parent / "tui-form
 if _tui_engine_path.exists() and str(_tui_engine_path) not in sys.path:
     sys.path.insert(0, str(_tui_engine_path))
 
-# Import the TUI Form Engine (external package)
-from tui_form_engine.core.flow_engine import FormExecutor
+# Import the TUI Form Designer FlowEngine (consolidated package)
+from tui_form_designer.core.flow_engine import FlowEngine
 
 from ..core.config import Configuration
 from ..discovery.docker import DockerDiscovery
@@ -115,12 +115,12 @@ class ConfigurationManager:
 
         # Initialize flow engine with layouts directory
         if self.flows_dir and self.flows_dir.exists():
-            self.flow_engine = FormExecutor(flows_dir=str(self.flows_dir))
+            self.flow_engine = FlowEngine(flows_dir=str(self.flows_dir))
         else:
             # Fallback to package-relative path for production
             fallback_flows_dir = Path(__file__).parent.parent / "collector" / "layouts"
             if fallback_flows_dir.exists():
-                self.flow_engine = FormExecutor(flows_dir=str(fallback_flows_dir))
+                self.flow_engine = FlowEngine(flows_dir=str(fallback_flows_dir))
             else:
                 logger.warning("Flow layouts directory not found - TUI forms may not be available")
                 self.flow_engine = None

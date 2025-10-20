@@ -120,7 +120,11 @@ Generated: {metadata.get('generated_at', 'Unknown time')}"""
 
             # Simple evaluation (in production, use safer evaluation)
             return eval(condition)
-        except:
+        except (NameError, SyntaxError, TypeError) as e:
+            # Log or handle specific evaluation errors
+            return False
+        except Exception as e:
+            # Catch any other unexpected errors
             return False
 
     def run_flow_with_intelligent_defaults(self, layout_path: str):

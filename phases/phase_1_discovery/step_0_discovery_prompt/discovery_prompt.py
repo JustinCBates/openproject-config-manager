@@ -16,7 +16,7 @@ import sys
 # Import TUI Form Engine
 tui_path = Path(__file__).parent.parent.parent.parent.parent / 'tui-form-designer' / 'src'
 sys.path.insert(0, str(tui_path))
-from tui_form_engine.renderer import FormRenderer
+from src.openproject_config_manager.tui_adapter import FormRenderer
 
 logger = logging.getLogger(__name__)
 
